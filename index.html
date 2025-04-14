@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="icon" href="images/outbye.png" type="image/x-icon">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/spin.js/2.3.2/spin.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 260px;
+            background: #1e2a44;
+            color: #fff;
+            padding: 30px 20px;
+            transition: all 0.3s;
+            box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .sidebar .logo img {
+            width: 60px;
+            height: 60px;
+            margin-right: 10px;
+            border-radius: 50%;
+        }
+
+        .sidebar .logo h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .sidebar .nav-link {
+            color: #d1d5db;
+            padding: 12px 20px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .sidebar .nav-link:hover {
+            background: #f26b0a;
+            color: #fff;
+            transform: translateX(5px);
+        }
+
+        .content {
+            margin-left: 260px;
+            padding: 30px;
+        }
+
+        .header {
+            background: #fff;
+            padding: 20px 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #1e2a44;
+            margin: 0;
+        }
+
+        .btn-custom {
+            background: linear-gradient(90deg, #f26b0a, #ff5e62);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-custom:hover {
+            background: linear-gradient(90deg, #ff5e62, #f26b0a);
+            transform: translateY(-2px);
+        }
+
+        .btn-notification {
+            background: linear-gradient(90deg, #17301d, #2b5c3b);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 500;
+            margin-right: 10px;
+            transition: all 0.3s;
+        }
+
+        .btn-notification:hover {
+            background: linear-gradient(90deg, #2b5c3b, #17301d);
+            transform: translateY(-2px);
+            color: #fff;
+        }
+
+        .overview {
+            margin-bottom: 30px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: nowrap;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        .overview .card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+            flex: 1;
+            min-width: 220px;
+            text-align: center;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            align-items: center;
+        }
+
+        .overview .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, #f26b0a, #ff5e62);
+            transition: height 0.3s;
+        }
+
+        .overview .card:hover::before {
+            height: 100%;
+            opacity: 0.1;
+        }
+
+        .overview .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .overview .card h5 {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #1e2a44;
+            margin-bottom: 10px;
+        }
+
+        .overview .card p {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #f26b0a;
+            margin: 0;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        .section .card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        .section .card-header {
+            padding: 15px 20px;
+            background: linear-gradient(90deg, #f5f7fa, #c3cfe2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .section .card-header h5 {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: #1e2a44;
+            margin: 0;
+        }
+
+        .section .card-header .btn-custom {
+            font-size: 0.9rem;
+            padding: 5px 15px;
+        }
+
+        .table {
+            margin: 0;
+        }
+
+        .table th {
+            background: #f1f5f9;
+            color: #1e2a44;
+            font-weight: 500;
+            padding: 15px;
+        }
+
+        .table td {
+            padding: 15px;
+            vertical-align: middle;
+            text-align: center;
+            color: #4b5563;
+            transition: background 0.3s;
+        }
+
+        .table tr:hover td {
+            background: #f1f5f9;
+        }
+
+        .table img {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+
+        .spinner-container {
+            display: none;
+            /* مخفي افتراضيًا، هيظهر لما الـ spinner يكون شغال */
+            justify-content: center;
+            align-items: center;
+            height: 20px;
+            /* تقليل الارتفاع عشان يبقى فوق الجدول مباشرة */
+            margin-bottom: 10px;
+        }
+
+        .spinner-active {
+            display: flex;
+            /* يظهر لما الـ spinner شغال */
+        }
+
+        .toggle-sidebar {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 220px;
+                transform: translateX(-220px);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .content {
+                margin-left: 0;
+                padding: 20px;
+            }
+
+            .toggle-sidebar {
+                display: block;
+            }
+
+            .overview {
+                flex-direction: column;
+            }
+
+            .overview .card {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <button class="btn btn-custom toggle-sidebar" onclick="toggleSidebar()">
+        Menu
+    </button>
+    <div class="sidebar" id="sidebar">
+        <div class="logo">
+            <img src="images/out bye.png" alt="Logo">
+            <h3>Admin Dashboard</h3>
+        </div>
+        <nav class="nav flex-column">
+            <a class="nav-link" href="index.html">Dashboard</a>
+            <a class="nav-link" href="categories.html">Categories</a>
+            <a class="nav-link" href="services.html">Services</a>
+            <a class="nav-link" href="items.html">Items</a>
+            <a class="nav-link" href="orders.html">Orders</a>
+            <a class="nav-link" href="users.html">Users</a>
+            <a class="nav-link" href="#" onclick="logout()">Logout</a>
+        </nav>
+    </div>
+    <div class="content">
+        <div class="container-fluid">
+            <div class="header">
+                <h1>Admin Dashboard</h1>
+                <div>
+                    <button class="btn btn-notification" onclick="sendNotification()">
+                        Send Notification
+                    </button>
+                    <button class="btn btn-custom" onclick="logout()">
+                        Logout
+                    </button>
+                </div>
+            </div>
+            <div class="overview">
+                <div class="card" onclick="window.location.href='categories.html'">
+                    <h5>Total Categories</h5>
+                    <p id="categories-count">0</p>
+                </div>
+                <div class="card" onclick="window.location.href='services.html'">
+                    <h5>Total Services</h5>
+                    <p id="services-count">0</p>
+                </div>
+                <div class="card" onclick="window.location.href='items.html'">
+                    <h5>Total Items</h5>
+                    <p id="items-count">0</p>
+                </div>
+                <div class="card" onclick="window.location.href='users.html'">
+                    <h5>Total Users</h5>
+                    <p id="users-count">0</p>
+                </div>
+            </div>
+            <div class="section">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Recent Updates</h5>
+                        <a href="categories.html" class="btn btn-custom">View All</a>
+                    </div>
+                    <div id="table-spinner" class="spinner-container"></div>
+                    <div class="card-body">
+                        <table class="table table-hover table-striped mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Name</th>
+                                    <th>Image</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-updates-table"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="section">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Recent Users</h5>
+                        <a href="users.html" class="btn btn-custom">View All</a>
+                    </div>
+                    <div id="users-spinner" class="spinner-container"></div>
+                    <div class="card-body">
+                        <table class="table table-hover table-striped mb-0">
+                            <thead>
+                                <tr>
+                                    <th>User ID</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Created At</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="section">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Pending Orders</h5>
+                        <a href="orders.html" class="btn btn-custom">View All</a>
+                    </div>
+                    <div id="orders-spinner" class="spinner-container"></div>
+                    <div class="card-body">
+                        <table class="table table-hover table-striped mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>User ID</th>
+                                    <th>Total Price</th>
+                                    <th>Date</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orders-table"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="section">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Archived Orders</h5>
+                        <a href="orders.html" class="btn btn-custom">View All</a>
+                    </div>
+                    <div id="archive-spinner" class="spinner-container"></div>
+                    <div class="card-body">
+                        <table class="table table-hover table-striped mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>User ID</th>
+                                    <th>Total Price</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="archive-table"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/script.js"></script>
+</body>
+
+</html>

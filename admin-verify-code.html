@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Code - Admin</title>
+    <link rel="icon" href="images/out bye.png" type="image/x-icon">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.4.19/dist/sweetalert2.min.css" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f9f9f9;
+        }
+
+        .container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            padding: 20px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .verify-code-group {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .verify-code-field {
+            width: 50px;
+            height: 50px;
+            text-align: center;
+            font-size: 1.5rem;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .verify-code-field:focus {
+            border-color: #F06A0A;
+        }
+
+        button[type="submit"] {
+            background-color: #F06A0A;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #d95c00;
+        }
+
+        .container p {
+            margin-top: 15px;
+            font-size: 1rem;
+            color: #555;
+        }
+
+        #resendCodeLink {
+            color: #F06A0A;
+            text-decoration: none;
+            font-weight: bold;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        #resendCodeLink.enabled {
+            pointer-events: auto;
+            opacity: 1;
+        }
+
+        #resendCodeLink:hover {
+            text-decoration: underline;
+        }
+
+        .timer {
+            color: #F06A0A;
+            font-size: 1rem;
+            margin-top: 5px;
+            font-weight: bold;
+        }
+
+        .error-message {
+            color: red;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Verify Code</h1>
+        <form id="adminVerifyCodeForm">
+            <div class="verify-code-group">
+                <input type="text" id="verifyCodeField1" maxlength="1" class="verify-code-field" required>
+                <input type="text" id="verifyCodeField2" maxlength="1" class="verify-code-field" required>
+                <input type="text" id="verifyCodeField3" maxlength="1" class="verify-code-field" required>
+                <input type="text" id="verifyCodeField4" maxlength="1" class="verify-code-field" required>
+                <input type="text" id="verifyCodeField5" maxlength="1" class="verify-code-field" required>
+            </div>
+            <button type="submit">Verify</button>
+        </form>
+        <p>Didn't receive a code? <a href="#" id="resendCodeLink">Resend Code</a></p>
+        <div id="timer" class="timer"></div>
+        <div id="codeError" class="error-message"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/admin-verify-code.js"></script>
+  
+</body>
+
+</html>
