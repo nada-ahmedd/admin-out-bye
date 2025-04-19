@@ -24,7 +24,10 @@ function logout() {
 }
 
 function toggleSidebar() {
-    document.getElementById('sidebar').classList.toggle('active');
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+        sidebar.classList.toggle('active');
+    }
 }
 
 async function fetchWithToken(url, options = {}) {
@@ -148,6 +151,11 @@ async function approveOrder(orderId, userId) {
 
 async function loadOverview() {
     const overviewSpinnerContainer = document.getElementById("overview-spinner");
+    if (!overviewSpinnerContainer) {
+        console.error("Overview spinner container not found");
+        return;
+    }
+
     overviewSpinnerContainer.style.display = "flex";
     const overviewSpinner = new Spinner({ color: '#f26b0a', lines: 12 }).spin(overviewSpinnerContainer.querySelector('.spinner'));
 
@@ -192,10 +200,15 @@ async function loadOverview() {
             console.error("Users Error:", e);
         }
 
-        document.getElementById("categories-count").textContent = categoriesCount;
-        document.getElementById("services-count").textContent = servicesCount;
-        document.getElementById("items-count").textContent = itemsCount;
-        document.getElementById("users-count").textContent = usersCount;
+        const categoriesCountElement = document.getElementById("categories-count");
+        const servicesCountElement = document.getElementById("services-count");
+        const itemsCountElement = document.getElementById("items-count");
+        const usersCountElement = document.getElementById("users-count");
+
+        if (categoriesCountElement) categoriesCountElement.textContent = categoriesCount;
+        if (servicesCountElement) servicesCountElement.textContent = servicesCount;
+        if (itemsCountElement) itemsCountElement.textContent = itemsCount;
+        if (usersCountElement) usersCountElement.textContent = usersCount;
     } catch (error) {
         console.error("Overview Error:", error);
         showAlert("error", "Error", "Failed to load overview: " + error.message);
@@ -205,72 +218,200 @@ async function loadOverview() {
     }
 }
 
-async function loadRecentUpdates() {
+async function searchAll(query) {
+    const lowerQuery = query.toLowerCase();
+    let allData = {
+        categories: [],
+        services: [],
+        items: [],
+        users: [],
+        orders: [],
+        archivedOrders: []
+    };
+
+    try {
+        const categoriesData = await fetchWithToken(ENDPOINTS.CATEGORIES, { method: "GET" });
+        if (categoriesData.status === "success") {
+            allData.categories = categoriesData.data.map(item => ({
+                type: "Category",
+                name: item.categories_name,
+                image: item.categories_image,
+                date: item.categories_datetime
+            })).filter(item => item.name.toLowerCase().includes(lowerQuery));
+        }
+    } catch (e) {
+        console.error("Categories Search Error:", e);
+    }
+
+    try {
+        const servicesData = await fetchWithToken(ENDPOINTS.SERVICES, { method: "GET" });
+        if (servicesData.status === "success") {
+            allData.services = servicesData.data.map(item => ({
+                type: "Service",
+                name: item.service_name || "Unknown",
+                image: item.service_image || "",
+                date: item.service_datetime || ""
+            })).filter(item => item.name.toLowerCase().includes(lowerQuery));
+        }
+    } catch (e) {
+        console.error("Services Search Error:", e);
+    }
+
+    try {
+        const itemsData = await fetchWithToken(ENDPOINTS.ITEMS, { method: "GET" });
+        if (itemsData.status === "success") {
+            allData.items = itemsData.data.map(item => ({
+                type: "Item",
+                name: item.items_name || "Unknown",
+                image: item.items_image || "",
+                date: item.items_date || ""
+            })).filter(item => item.name.toLowerCase().includes(lowerQuery));
+        }
+    } catch (e) {
+        console.error("Items Search Error:", e);
+    }
+
+    try {
+        const usersData = await fetchWithToken(ENDPOINTS.USERS, { method: "GET" });
+        if (usersData.status === "success") {
+            allData.users = usersData.data.filter(user =>
+                user.users_name.toLowerCase().includes(lowerQuery) ||
+                user.users_email.toLowerCase().includes(lowerQuery) ||
+                user.users_phone.includes(lowerQuery)
+            );
+        }
+    } catch (e) {
+        console.error("Users Search Error:", e);
+    }
+
+    try {
+        const ordersData = await fetchWithToken(ENDPOINTS.ORDERS, { method: "GET" });
+        if (ordersData.status === "success") {
+            allData.orders = ordersData.data.filter(order =>
+                order.orders_id.toString().includes(lowerQuery) ||
+                order.orders_usersid.toString().includes(lowerQuery)
+            );
+        }
+    } catch (e) {
+        console.error("Orders Search Error:", e);
+    }
+
+    try {
+        const archiveData = await fetchWithToken(ENDPOINTS.ARCHIVE, { method: "GET" });
+        if (archiveData.status === "success") {
+            allData.archivedOrders = archiveData.data.filter(order =>
+                order.orders_id.toString().includes(lowerQuery) ||
+                order.orders_usersid.toString().includes(lowerQuery)
+            );
+        }
+    } catch (e) {
+        console.error("Archived Orders Search Error:", e);
+    }
+
+    return allData;
+}
+
+async function loadRecentUpdates(searchData = null) {
     const tableSpinnerContainer = document.getElementById("table-spinner");
+    if (!tableSpinnerContainer) {
+        console.error("Table spinner container not found");
+        return;
+    }
+
     tableSpinnerContainer.classList.add("spinner-active");
     const tableSpinner = new Spinner({ color: '#f26b0a', lines: 12 }).spin(tableSpinnerContainer.querySelector('.spinner'));
 
     try {
-        let recentCategories = [];
-        try {
-            const categoriesData = await fetchWithToken(ENDPOINTS.CATEGORIES, { method: "GET" });
-            if (categoriesData.status === "success") {
-                recentCategories = categoriesData.data.slice(0, 4).map(item => ({
-                    type: "Category",
-                    name: item.categories_name,
-                    image: item.categories_image,
-                    date: item.categories_datetime
-                }));
+        let recentUpdates = [];
+        const defaultDate = new Date().toISOString(); // تاريخ افتراضي لو التاريخ مش صحيح
+
+        if (searchData) {
+            recentUpdates = [
+                ...searchData.categories.map(item => ({
+                    ...item,
+                    date: item.date && !isNaN(new Date(item.date)) ? item.date : defaultDate
+                })),
+                ...searchData.services.map(item => ({
+                    ...item,
+                    date: item.date && !isNaN(new Date(item.date)) ? item.date : defaultDate
+                })),
+                ...searchData.items.map(item => ({
+                    ...item,
+                    date: item.date && !isNaN(new Date(item.date)) ? item.date : defaultDate
+                }))
+            ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 4);
+        } else {
+            let recentCategories = [];
+            try {
+                const categoriesData = await fetchWithToken(ENDPOINTS.CATEGORIES, { method: "GET" });
+                if (categoriesData.status === "success") {
+                    recentCategories = categoriesData.data.slice(0, 4).map(item => ({
+                        type: "Category",
+                        name: item.categories_name,
+                        image: item.categories_image,
+                        date: item.categories_datetime && !isNaN(new Date(item.categories_datetime)) ? item.categories_datetime : defaultDate
+                    }));
+                }
+            } catch (e) {
+                console.error("Categories Error:", e);
             }
-        } catch (e) {
-            console.error("Categories Error:", e);
+
+            let recentServices = [];
+            try {
+                const servicesData = await fetchWithToken(ENDPOINTS.SERVICES, { method: "GET" });
+                if (servicesData.status === "success") {
+                    recentServices = servicesData.data.slice(0, 4).map(item => ({
+                        type: "Service",
+                        name: item.service_name || "Unknown",
+                        image: item.service_image || "",
+                        date: item.service_datetime && !isNaN(new Date(item.service_datetime)) ? item.service_datetime : defaultDate
+                    }));
+                }
+            } catch (e) {
+                console.error("Services Error:", e);
+            }
+
+            let recentItems = [];
+            try {
+                const itemsData = await fetchWithToken(ENDPOINTS.ITEMS, { method: "GET" });
+                if (itemsData.status === "success") {
+                    recentItems = itemsData.data.slice(0, 4).map(item => ({
+                        type: "Item",
+                        name: item.items_name || "Unknown",
+                        image: item.items_image || "",
+                        date: item.items_date && !isNaN(new Date(item.items_date)) ? item.items_date : defaultDate
+                    }));
+                }
+            } catch (e) {
+                console.error("Items Error:", e);
+            }
+
+            recentUpdates = [...recentCategories, ...recentServices, ...recentItems]
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                .slice(0, 4);
         }
 
-        let recentServices = [];
-        try {
-            const servicesData = await fetchWithToken(ENDPOINTS.SERVICES, { method: "GET" });
-            if (servicesData.status === "success") {
-                recentServices = servicesData.data.slice(0, 4).map(item => ({
-                    type: "Service",
-                    name: item.service_name || "Unknown",
-                    image: item.service_image || "",
-                    date: item.service_datetime || ""
-                }));
-            }
-        } catch (e) {
-            console.error("Services Error:", e);
-        }
-
-        let recentItems = [];
-        try {
-            const itemsData = await fetchWithToken(ENDPOINTS.ITEMS, { method: "GET" });
-            if (itemsData.status === "success") {
-                recentItems = itemsData.data.slice(0, 4).map(item => ({
-                    type: "Item",
-                    name: item.item_name || "Unknown",
-                    image: item.item_image || "",
-                    date: item.item_datetime || ""
-                }));
-            }
-        } catch (e) {
-            console.error("Items Error:", e);
-        }
-
-        const recentUpdates = [...recentCategories, ...recentServices, ...recentItems]
-            .sort((a, b) => new Date(b.date) - new Date(a.date))
-            .slice(0, 4);
         const tableBody = document.getElementById("recent-updates-table");
+        if (!tableBody) {
+            console.error("Recent updates table not found");
+            return;
+        }
+
         tableBody.innerHTML = "";
-        recentUpdates.forEach(item => {
-            tableBody.innerHTML += `
-                <tr>
-                    <td>${item.type}</td>
-                    <td>${item.name}</td>
-                    <td><img src="${item.image || 'images/placeholder.png'}" alt="${item.type} Image"></td>
-                    <td>${item.date}</td>
-                </tr>
-            `;
-        });
+        if (recentUpdates.length > 0) {
+            recentUpdates.forEach(item => {
+                tableBody.innerHTML += `
+                    <tr>
+                        <td>${item.type}</td>
+                        <td>${item.name}</td>
+                        <td><img src="${item.image || 'images/placeholder.png'}" alt="${item.type} Image"></td>
+                        <td>${item.date}</td>
+                    </tr>
+                `;
+            });
+        } else {
+            tableBody.innerHTML = `<tr><td colspan="4">No results found</td></tr>`;
+        }
     } catch (error) {
         console.error("Recent Updates Error:", error);
         showAlert("error", "Error", "Failed to load recent updates: " + error.message);
@@ -280,23 +421,37 @@ async function loadRecentUpdates() {
     }
 }
 
-async function loadRecentUsers() {
+async function loadRecentUsers(searchData = null) {
     const usersSpinnerContainer = document.getElementById("users-spinner");
+    if (!usersSpinnerContainer) {
+        console.error("Users spinner container not found");
+        return;
+    }
+
     usersSpinnerContainer.classList.add("spinner-active");
     const usersSpinner = new Spinner({ color: '#f26b0a', lines: 12 }).spin(usersSpinnerContainer.querySelector('.spinner'));
 
     try {
         let recentUsers = [];
-        try {
-            const usersData = await fetchWithToken(ENDPOINTS.USERS, { method: "GET" });
-            if (usersData.status === "success") {
-                recentUsers = usersData.data.slice(0, 5);
+        if (searchData) {
+            recentUsers = searchData.users.slice(0, 5);
+        } else {
+            try {
+                const usersData = await fetchWithToken(ENDPOINTS.USERS, { method: "GET" });
+                if (usersData.status === "success") {
+                    recentUsers = usersData.data.slice(0, 5);
+                }
+            } catch (e) {
+                console.error("Users Error:", e);
             }
-        } catch (e) {
-            console.error("Users Error:", e);
         }
 
         const usersTable = document.getElementById("users-table");
+        if (!usersTable) {
+            console.error("Users table not found");
+            return;
+        }
+
         usersTable.innerHTML = "";
         if (recentUsers.length > 0) {
             recentUsers.forEach(user => {
@@ -322,24 +477,40 @@ async function loadRecentUsers() {
     }
 }
 
-async function loadPendingOrders() {
+async function loadPendingOrders(searchData = null) {
     const ordersSpinnerContainer = document.getElementById("orders-spinner");
+    if (!ordersSpinnerContainer) {
+        console.error("Orders spinner container not found");
+        return;
+    }
+
     ordersSpinnerContainer.classList.add("spinner-active");
     const ordersSpinner = new Spinner({ color: '#f26b0a', lines: 12 }).spin(ordersSpinnerContainer.querySelector('.spinner'));
 
     try {
-        let ordersData = { status: "error", data: [] };
-        try {
-            ordersData = await fetchWithToken(ENDPOINTS.ORDERS, { method: "GET" });
-            console.log("Orders Data:", ordersData);
-        } catch (e) {
-            console.error("Orders Error:", e);
+        let ordersData = [];
+        if (searchData) {
+            ordersData = searchData.orders.slice(0, 5);
+        } else {
+            try {
+                const response = await fetchWithToken(ENDPOINTS.ORDERS, { method: "GET" });
+                if (response.status === "success") {
+                    ordersData = response.data.slice(0, 5);
+                }
+            } catch (e) {
+                console.error("Orders Error:", e);
+            }
         }
 
         const ordersTable = document.getElementById("orders-table");
+        if (!ordersTable) {
+            console.error("Orders table not found");
+            return;
+        }
+
         ordersTable.innerHTML = "";
-        if (ordersData.status === "success" && ordersData.data.length > 0) {
-            ordersData.data.slice(0, 5).forEach(order => {
+        if (ordersData.length > 0) {
+            ordersData.forEach(order => {
                 ordersTable.innerHTML += `
                     <tr>
                         <td>${order.orders_id}</td>
@@ -362,24 +533,40 @@ async function loadPendingOrders() {
     }
 }
 
-async function loadArchivedOrders() {
+async function loadArchivedOrders(searchData = null) {
     const archiveSpinnerContainer = document.getElementById("archive-spinner");
+    if (!archiveSpinnerContainer) {
+        console.error("Archive spinner container not found");
+        return;
+    }
+
     archiveSpinnerContainer.classList.add("spinner-active");
     const archiveSpinner = new Spinner({ color: '#f26b0a', lines: 12 }).spin(archiveSpinnerContainer.querySelector('.spinner'));
 
     try {
-        let archiveData = { status: "error", data: [] };
-        try {
-            archiveData = await fetchWithToken(ENDPOINTS.ARCHIVE, { method: "GET" });
-            console.log("Archive Data:", archiveData);
-        } catch (e) {
-            console.error("Archive Error:", e);
+        let archiveData = [];
+        if (searchData) {
+            archiveData = searchData.archivedOrders.slice(0, 5);
+        } else {
+            try {
+                const response = await fetchWithToken(ENDPOINTS.ARCHIVE, { method: "GET" });
+                if (response.status === "success") {
+                    archiveData = response.data.slice(0, 5);
+                }
+            } catch (e) {
+                console.error("Archive Error:", e);
+            }
         }
 
         const archiveTable = document.getElementById("archive-table");
+        if (!archiveTable) {
+            console.error("Archive table not found");
+            return;
+        }
+
         archiveTable.innerHTML = "";
-        if (archiveData.status === "success" && archiveData.data.length > 0) {
-            archiveData.data.slice(0, 5).forEach(order => {
+        if (archiveData.length > 0) {
+            archiveData.forEach(order => {
                 archiveTable.innerHTML += `
                     <tr>
                         <td>${order.orders_id}</td>
@@ -401,7 +588,7 @@ async function loadArchivedOrders() {
     }
 }
 
-async function loadDashboard() {
+async function loadDashboard(searchQuery = "") {
     if (!isLoggedIn()) {
         showAlert("error", "Unauthorized", "Please log in to continue", () => {
             window.location.href = 'login.html';
@@ -409,19 +596,53 @@ async function loadDashboard() {
         return;
     }
 
-    // Load each section independently
-    Promise.all([
+    let searchData = null;
+    if (searchQuery) {
+        searchData = await searchAll(searchQuery);
+    }
+
+    await Promise.all([
         loadOverview(),
-        loadRecentUpdates(),
-        loadRecentUsers(),
-        loadPendingOrders(),
-        loadArchivedOrders()
+        loadRecentUpdates(searchData),
+        loadRecentUsers(searchData),
+        loadPendingOrders(searchData),
+        loadArchivedOrders(searchData)
     ]).catch(error => {
         console.error("Dashboard Load Error:", error);
         showAlert("error", "Error", "An error occurred while loading the dashboard: " + error.message);
     });
 }
 
+function handleSearch() {
+    const searchQuery = document.getElementById("global-search-input")?.value.trim();
+    loadDashboard(searchQuery);
+    const clearButton = document.getElementById("clear-search");
+    if (clearButton) {
+        clearButton.style.display = searchQuery ? "block" : "none";
+    }
+}
+
+function clearSearch() {
+    const searchInput = document.getElementById("global-search-input");
+    const clearButton = document.getElementById("clear-search");
+    if (searchInput && clearButton) {
+        searchInput.value = "";
+        clearButton.style.display = "none";
+        loadDashboard("");
+    }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
-    loadDashboard();
+    loadDashboard("");
+    const searchInput = document.getElementById("global-search-input");
+    if (searchInput) {
+        searchInput.addEventListener("input", handleSearch);
+        searchInput.addEventListener("blur", clearSearch);
+    }
+
+    // تحديث تلقائي كل 30 ثانية
+    setInterval(() => {
+        const searchQuery = document.getElementById("global-search-input")?.value.trim() || "";
+        loadDashboard(searchQuery);
+    }, 300000);
 });

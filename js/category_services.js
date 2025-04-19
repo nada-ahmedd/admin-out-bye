@@ -10,7 +10,8 @@ const DEFAULT_IMAGE = 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 let categoryId;
-let serviceType; // متغير عشان نحتفظ بالـ service_type المحدد
+let serviceType;
+let originalServicesData = [];
 
 function isLoggedIn() {
     return localStorage.getItem('isAdminLoggedIn') === 'true' && localStorage.getItem('adminToken');
@@ -96,6 +97,34 @@ function showAlert(icon, title, text, callback) {
     });
 }
 
+async function loadServiceTypes() {
+    try {
+        const data = await fetchWithToken(ENDPOINTS.VIEW, { method: "GET" });
+        if (data.status === "success" && data.data) {
+            const serviceTypes = [...new Set(data.data.map(service => service.service_type).filter(type => type))];
+            const selectElement = document.getElementById("service-type");
+            selectElement.innerHTML = "";
+            if (serviceTypes.length === 0) {
+                selectElement.innerHTML = `<option value="">No types available</option>`;
+                return;
+            }
+            serviceTypes.forEach(type => {
+                const option = document.createElement("option");
+                option.value = type;
+                option.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+                selectElement.appendChild(option);
+            });
+            if (serviceType) {
+                selectElement.value = serviceType;
+            }
+        } else {
+            showAlert("error", "Error", "Failed to load service types.");
+        }
+    } catch (error) {
+        showAlert("error", "Error", `Failed to load service types: ${error.message}`);
+    }
+}
+
 async function loadServices() {
     if (!isLoggedIn()) {
         showAlert("error", "Unauthorized", "Please log in to continue.", () => {
@@ -114,71 +143,102 @@ async function loadServices() {
     }
 
     const spinnerContainer = document.getElementById("table-spinner");
+    spinnerContainer.classList.add("spinner-active");
     spinnerContainer.innerHTML = '<div class="spinner"></div>';
     const spinner = new Spinner({ color: '#f26b0a', lines: 12 }).spin(spinnerContainer.querySelector('.spinner'));
 
     try {
         const data = await fetchWithToken(ENDPOINTS.VIEW, { method: "GET" });
         spinner.stop();
+        spinnerContainer.classList.remove("spinner-active");
         spinnerContainer.innerHTML = '';
 
         if (data.status === "success") {
-            const tableBody = document.getElementById("services-table");
-            tableBody.innerHTML = "";
             const filteredServices = data.data.filter(service => String(service.service_cat) === String(categoryId));
-            if (filteredServices.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="9">No services found for this category.</td></tr>`;
-                document.getElementById("service-type-title").textContent = "No Services Available";
-                serviceType = "restaurant"; // قيمة افتراضية إذا ما فيش خدمات
-                return;
-            }
-
-            // احتفظ بالـ service_type من أول خدمة
-            serviceType = filteredServices[0].service_type || "restaurant";
-            document.getElementById("service-type-title").textContent = serviceType.charAt(0).toUpperCase() + serviceType.slice(1);
-
-            filteredServices.forEach(service => {
-                let imageSrc = DEFAULT_IMAGE;
-                if (service.service_image && service.service_image !== "null" && service.service_image !== "") {
-                    imageSrc = service.service_image;
-                }
-                const activeStatus = service.service_active === "1" ? "Yes" : "No";
-                tableBody.innerHTML += `
-                    <tr>
-                        <td>${service.service_id}</td>
-                        <td>${service.service_name}</td>
-                        <td>${service.service_name_ar}</td>
-                        <td>${service.service_type}</td>
-                        <td>${service.service_cat}</td>
-                        <td><img src="${imageSrc}" alt="Service Image" onerror="this.src='${DEFAULT_IMAGE}'"></td>
-                        <td>${activeStatus}</td>
-                        <td>${service.service_created}</td>
-                        <td>
-                            <button class="btn btn-sm btn-info btn-action me-2" onclick="window.location.href='service_items.html?service_id=${service.service_id}&category_id=${categoryId}'">
-                                View
-                            </button>
-                            <button class="btn btn-sm btn-warning btn-action me-2" onclick="prepareEditService('${service.service_id}', '${service.service_name}', '${service.service_name_ar}', '${service.service_description}', '${service.service_description_ar}', '${service.service_location}', '${service.service_rating}', '${service.service_phone}', '${service.service_email}', '${service.service_website}', '${service.service_type}', '${service.service_cat}', '${service.service_active}', '${service.service_image}')">
-                                Edit
-                            </button>
-                            <button class="btn btn-sm btn-danger btn-action" onclick="deleteService('${service.service_id}', '${service.service_image}')">
-                                Delete
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
+            originalServicesData = filteredServices;
+            renderServices(originalServicesData);
         } else {
             showAlert("error", "Error", data.message || "Failed to load services.");
             document.getElementById("service-type-title").textContent = "Error Loading Services";
-            serviceType = "restaurant"; // قيمة افتراضية في حالة الخطأ
+            serviceType = "restaurant";
         }
     } catch (error) {
         spinner.stop();
+        spinnerContainer.classList.remove("spinner-active");
         spinnerContainer.innerHTML = '';
         showAlert("error", "Error", `Failed to load services: ${error.message}`);
         document.getElementById("service-type-title").textContent = "Error Loading Services";
-        serviceType = "restaurant"; // قيمة افتراضية في حالة الخطأ
+        serviceType = "restaurant";
     }
+}
+
+function renderServices(services) {
+    const tableBody = document.getElementById("services-table");
+    tableBody.innerHTML = "";
+    if (services.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="9">No services found for this category.</td></tr>`;
+        document.getElementById("service-type-title").textContent = "No Services Available";
+        serviceType = "restaurant";
+        return;
+    }
+
+    serviceType = services[0].service_type || "restaurant";
+    document.getElementById("service-type-title").textContent = serviceType.charAt(0).toUpperCase() + serviceType.slice(1);
+
+    services.forEach(service => {
+        let imageSrc = DEFAULT_IMAGE;
+        if (service.service_image && service.service_image !== "null" && service.service_image !== "") {
+            imageSrc = service.service_image;
+        }
+        const activeStatus = service.service_active === "1" ? "Yes" : "No";
+        tableBody.innerHTML += `
+            <tr>
+                <td>${service.service_id}</td>
+                <td>${service.service_name}</td>
+                <td>${service.service_name_ar}</td>
+                <td>${service.service_type}</td>
+                <td>${service.service_cat}</td>
+                <td><img src="${imageSrc}" alt="Service Image" onerror="this.src='${DEFAULT_IMAGE}'"></td>
+                <td>${activeStatus}</td>
+                <td>${service.service_created}</td>
+                <td>
+                    <button class="btn btn-sm btn-info btn-action me-2" onclick="window.location.href='service_items.html?service_id=${service.service_id}&category_id=${categoryId}'">
+                        View
+                    </button>
+                    <button class="btn btn-sm btn-warning btn-action me-2" onclick="prepareEditService('${service.service_id}', '${service.service_name}', '${service.service_name_ar}', '${service.service_description}', '${service.service_description_ar}', '${service.service_location}', '${service.service_rating}', '${service.service_phone}', '${service.service_email}', '${service.service_website}', '${service.service_type}', '${service.service_active}', '${service.service_image}')">
+                        Edit
+                    </button>
+                    <button class="btn btn-sm btn-danger btn-action" onclick="deleteService('${service.service_id}', '${service.service_image}')">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+}
+
+function clearSearch() {
+    const searchInput = document.getElementById("global-search-input");
+    searchInput.value = "";
+    document.getElementById("clear-search").style.display = "none";
+    renderServices(originalServicesData);
+}
+
+function searchServices() {
+    const searchInput = document.getElementById("global-search-input").value.trim().toLowerCase();
+    if (!searchInput) {
+        renderServices(originalServicesData);
+        return;
+    }
+
+    const filteredServices = originalServicesData.filter(service =>
+        (service.service_id && service.service_id.toString().includes(searchInput)) ||
+        (service.service_name && service.service_name.toLowerCase().includes(searchInput)) ||
+        (service.service_name_ar && service.service_name_ar.toLowerCase().includes(searchInput)) ||
+        (service.service_type && service.service_type.toLowerCase().includes(searchInput)) ||
+        (service.service_cat && service.service_cat.toString().includes(searchInput))
+    );
+    renderServices(filteredServices);
 }
 
 function prepareAddService() {
@@ -186,11 +246,13 @@ function prepareAddService() {
     document.getElementById("serviceForm").reset();
     document.getElementById("service-id").value = "";
     document.getElementById("service-image-old").value = "";
-    document.getElementById("service-type").value = serviceType; // ضبط الـ Type تلقائيًا
+    loadServiceTypes();
+    document.getElementById("service-active").value = "1";
     document.getElementById("saveServiceBtn").onclick = addService;
+    new bootstrap.Modal(document.getElementById("serviceModal")).show();
 }
 
-function prepareEditService(id, name, nameAr, description, descriptionAr, location, rating, phone, email, website, type, cat, active, image) {
+function prepareEditService(id, name, nameAr, description, descriptionAr, location, rating, phone, email, website, type, active, image) {
     document.getElementById("serviceModalLabel").textContent = "Edit Service";
     document.getElementById("service-id").value = id;
     document.getElementById("service-name").value = name || "";
@@ -202,7 +264,8 @@ function prepareEditService(id, name, nameAr, description, descriptionAr, locati
     document.getElementById("service-phone").value = phone || "";
     document.getElementById("service-email").value = email || "";
     document.getElementById("service-website").value = website || "";
-    document.getElementById("service-type").value = type || serviceType; // استخدام الـ Type المحدد
+    loadServiceTypes();
+    document.getElementById("service-type").value = type || "restaurant";
     document.getElementById("service-active").value = active || "1";
     document.getElementById("service-image-old").value = image || "";
     document.getElementById("service-image").value = "";
@@ -220,19 +283,18 @@ async function addService() {
     const phone = document.getElementById("service-phone").value.trim();
     const email = document.getElementById("service-email").value.trim();
     const website = document.getElementById("service-website").value.trim();
+    const type = document.getElementById("service-type").value;
     const active = document.getElementById("service-active").value;
     const image = document.getElementById("service-image").files[0];
 
-    if (!name || !nameAr || !description || !descriptionAr || !location || !rating || !phone || !email) {
-        showAlert("error", "Error", "Please fill all required fields (Name, Name AR, Description, Description AR, Location, Rating, Phone, Email).");
+    if (!name || !nameAr || !description || !descriptionAr || !location || !rating || !phone || !email || !type) {
+        showAlert("error", "Error", "Please fill all required fields (Name, Name AR, Description, Description AR, Location, Rating, Phone, Email, Type).");
         return;
     }
 
-    if (image) {
-        if (image.size > MAX_FILE_SIZE) {
-            showAlert("error", "Error", "Image size exceeds 5 MB limit.");
-            return;
-        }
+    if (image && image.size > MAX_FILE_SIZE) {
+        showAlert("error", "Error", "Image size exceeds 5 MB limit.");
+        return;
     }
 
     const formData = new FormData();
@@ -245,7 +307,7 @@ async function addService() {
     formData.append("service_phone", phone);
     formData.append("service_email", email);
     formData.append("service_website", website);
-    formData.append("service_type", serviceType); // استخدام الـ Type المحدد تلقائيًا
+    formData.append("service_type", type);
     formData.append("service_cat", categoryId);
     formData.append("service_active", active);
     if (image) formData.append("files", image);
@@ -286,20 +348,19 @@ async function editService() {
     const phone = document.getElementById("service-phone").value.trim();
     const email = document.getElementById("service-email").value.trim();
     const website = document.getElementById("service-website").value.trim();
+    const type = document.getElementById("service-type").value;
     const active = document.getElementById("service-active").value;
     const imageOld = document.getElementById("service-image-old").value;
     const image = document.getElementById("service-image").files[0];
 
-    if (!name && !nameAr && !description && !descriptionAr && !location && !rating && !phone && !email && !website && !active && !image) {
+    if (!name && !nameAr && !description && !descriptionAr && !location && !rating && !phone && !email && !website && !type && !active && !image) {
         showAlert("error", "Error", "At least one field must be provided to update.");
         return;
     }
 
-    if (image) {
-        if (image.size > MAX_FILE_SIZE) {
-            showAlert("error", "Error", "Image size exceeds 5 MB limit.");
-            return;
-        }
+    if (image && image.size > MAX_FILE_SIZE) {
+        showAlert("error", "Error", "Image size exceeds 5 MB limit.");
+        return;
     }
 
     const formData = new FormData();
@@ -313,7 +374,7 @@ async function editService() {
     if (phone) formData.append("service_phone", phone);
     if (email) formData.append("service_email", email);
     if (website) formData.append("service_website", website);
-    formData.append("service_type", serviceType); // استخدام الـ Type المحدد تلقائيًا
+    formData.append("service_type", type);
     formData.append("service_cat", categoryId);
     if (active) formData.append("service_active", active);
     if (imageOld) formData.append("imageold", imageOld);
@@ -375,4 +436,19 @@ async function deleteService(id, imageName) {
 
 document.addEventListener("DOMContentLoaded", () => {
     loadServices();
+
+    const searchInput = document.getElementById("global-search-input");
+    const clearSearchBtn = document.getElementById("clear-search");
+
+    searchInput.addEventListener("input", () => {
+        clearSearchBtn.style.display = searchInput.value ? "block" : "none";
+        searchServices();
+    });
+
+    searchInput.addEventListener("blur", () => {
+        if (!searchInput.value) {
+            clearSearchBtn.style.display = "none";
+            renderServices(originalServicesData);
+        }
+    });
 });

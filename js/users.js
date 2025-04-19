@@ -5,6 +5,8 @@ const ENDPOINTS = {
     DELETE_USER: `${API_BASE_URL}users/delete.php`
 };
 
+let originalUsersData = [];
+
 function isLoggedIn() {
     const isLoggedIn = localStorage.getItem('isAdminLoggedIn') === 'true' && localStorage.getItem('adminToken');
     console.log("Are you logged in?", isLoggedIn, "Token:", localStorage.getItem('adminToken'));
@@ -19,7 +21,10 @@ function logout() {
 }
 
 function toggleSidebar() {
-    document.getElementById('sidebar').classList.toggle('active');
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+        sidebar.classList.toggle('active');
+    }
 }
 
 async function fetchWithToken(url, options = {}) {
@@ -148,13 +153,83 @@ async function deleteUser(userId) {
     }
 }
 
+function renderUsers(users) {
+    const usersTable = document.getElementById("users-table");
+    if (!usersTable) {
+        console.error("Users table not found");
+        return;
+    }
+
+    usersTable.innerHTML = "";
+    if (users.length === 0) {
+        usersTable.innerHTML = `<tr><td colspan="7">No users found</td></tr>`;
+        return;
+    }
+
+    users.forEach(user => {
+        const avatar = user.users_image || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+        usersTable.innerHTML += `
+            <tr>
+                <td>${user.users_id}</td>
+                <td>${user.users_name}</td>
+                <td>${user.users_email}</td>
+                <td>${user.users_phone}</td>
+                <td><img src="${avatar}" alt="User Image" onerror="this.src='https://cdn-icons-png.flaticon.com/512/149/149071.png'"></td>
+                <td>${user.users_create}</td>
+                <td>
+                    <button class="btn btn-sm btn-custom me-2" onclick="editUser(${user.users_id}, '${user.users_name}', '${user.users_email}', '${user.users_phone}')">Edit</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.users_id})">Delete</button>
+                </td>
+            </tr>
+        `;
+    });
+}
+
+function clearSearch() {
+    const searchInput = document.getElementById("global-search-input");
+    const clearSearchBtn = document.getElementById("clear-search");
+    if (searchInput && clearSearchBtn) {
+        searchInput.value = "";
+        clearSearchBtn.style.display = "none";
+        renderUsers(originalUsersData);
+    }
+}
+
+function searchUsers() {
+    const searchInput = document.getElementById("global-search-input");
+    if (!searchInput) {
+        console.error("Search input not found");
+        return;
+    }
+
+    const searchValue = searchInput.value.trim().toLowerCase();
+    if (!searchValue) {
+        renderUsers(originalUsersData);
+        return;
+    }
+
+    const filteredUsers = originalUsersData.filter(user =>
+        (user.users_id && user.users_id.toString().includes(searchValue)) ||
+        (user.users_name && user.users_name.toLowerCase().includes(searchValue)) ||
+        (user.users_email && user.users_email.toLowerCase().includes(searchValue)) ||
+        (user.users_phone && user.users_phone.toLowerCase().includes(searchValue))
+    );
+    renderUsers(filteredUsers);
+}
+
 async function loadUsers() {
     if (!isLoggedIn()) {
         showAlert("error", "Unauthorized", "Please log in to continue");
         window.location.href = 'login.html';
         return;
     }
+
     const usersSpinnerContainer = document.getElementById("users-spinner");
+    if (!usersSpinnerContainer) {
+        console.error("Spinner container not found");
+        return;
+    }
+
     usersSpinnerContainer.innerHTML = '<div class="spinner"></div>';
     const usersSpinner = new Spinner({ color: '#f26b0a', lines: 12 }).spin(usersSpinnerContainer.querySelector('.spinner'));
 
@@ -166,32 +241,19 @@ async function loadUsers() {
         } catch (e) {
             console.error("Users Error:", e);
         }
-        const usersTable = document.getElementById("users-table");
-        usersTable.innerHTML = "";
-        if (usersData.status === "success" && usersData.data.length > 0) {
-            usersData.data.forEach(user => {
-                const avatar = user.users_image || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
-                usersTable.innerHTML += `
-                    <tr>
-                        <td>${user.users_id}</td>
-                        <td>${user.users_name}</td>
-                        <td>${user.users_email}</td>
-                        <td>${user.users_phone}</td>
-                        <td><img src="${avatar}" alt="User Image" onerror="this.src='https://cdn-icons-png.flaticon.com/512/149/149071.png'"></td>
-                        <td>${user.users_create}</td>
-                        <td>
-                            <button class="btn btn-sm btn-custom me-2" onclick="editUser(${user.users_id}, '${user.users_name}', '${user.users_email}', '${user.users_phone}')">Edit</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.users_id})">Delete</button>
-                        </td>
-                    </tr>
-                `;
-            });
-        } else {
-            usersTable.innerHTML = `<tr><td colspan="7">No users found</td></tr>`;
-        }
 
         usersSpinner.stop();
         usersSpinnerContainer.innerHTML = '';
+
+        if (usersData.status === "success" && usersData.data.length > 0) {
+            originalUsersData = usersData.data;
+            renderUsers(originalUsersData);
+        } else {
+            const usersTable = document.getElementById("users-table");
+            if (usersTable) {
+                usersTable.innerHTML = `<tr><td colspan="7">No users found</td></tr>`;
+            }
+        }
     } catch (error) {
         usersSpinner.stop();
         usersSpinnerContainer.innerHTML = '';
@@ -201,4 +263,23 @@ async function loadUsers() {
 
 document.addEventListener("DOMContentLoaded", () => {
     loadUsers();
+
+    const searchInput = document.getElementById("global-search-input");
+    const clearSearchBtn = document.getElementById("clear-search");
+
+    if (searchInput && clearSearchBtn) {
+        searchInput.addEventListener("input", () => {
+            clearSearchBtn.style.display = searchInput.value ? "block" : "none";
+            searchUsers();
+        });
+
+        searchInput.addEventListener("blur", () => {
+            if (!searchInput.value) {
+                clearSearchBtn.style.display = "none";
+                renderUsers(originalUsersData);
+            }
+        });
+    } else {
+        console.error("Search input or clear button not found");
+    }
 });

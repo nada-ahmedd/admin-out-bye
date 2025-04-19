@@ -10,6 +10,7 @@
     <link rel="icon" href="images/outbye.png" type="image/x-icon">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/spin.js/2.3.2/spin.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
@@ -74,7 +75,11 @@
 
         .content {
             margin-left: 260px;
-            padding: 30px;
+            padding: 30px 30px 30px 0;
+        }
+
+        .container-fluid {
+            padding: 0;
         }
 
         .service-title {
@@ -88,12 +93,13 @@
 
         .header {
             background: #fff;
-            padding: 20px 30px;
+            padding: 20px 10px;
             border-radius: 12px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-start;
             align-items: center;
+            gap: 30px;
             margin-bottom: 30px;
             animation: fadeIn 1s ease-in-out;
         }
@@ -103,6 +109,56 @@
             font-weight: 600;
             color: #1e2a44;
             margin: 0;
+        }
+
+        .header .search-container {
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        .header .search-container input {
+            width: 300px;
+            padding: 10px 40px 10px 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 25px;
+            font-size: 1rem;
+            background: #f8fafc;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .header .search-container input:focus {
+            outline: none;
+            border-color: #f26b0a;
+            background: #fff;
+            box-shadow: 0 0 10px rgba(242, 107, 10, 0.2);
+        }
+
+        .header .search-container input:hover {
+            border-color: #f26b0a;
+            background: #fff;
+        }
+
+        .header .search-container .clear-search {
+            position: absolute;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #64748b;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: none;
+            transition: color 0.3s;
+        }
+
+        .header .search-container .clear-search:hover {
+            color: #f26b0a;
+        }
+
+        .header .btn-group {
+            display: flex;
+            gap: 10px;
         }
 
         .btn-custom {
@@ -138,6 +194,21 @@
             overflow: hidden;
         }
 
+        .section .card-header {
+            padding: 15px 20px;
+            background: linear-gradient(90deg, #f5f7fa, #c3cfe2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .section .card-header h5 {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: #1e2a44;
+            margin: 0;
+        }
+
         .table {
             margin: 0;
         }
@@ -147,6 +218,7 @@
             color: #1e2a44;
             font-weight: 500;
             padding: 15px;
+            text-align: center;
         }
 
         .table td {
@@ -162,8 +234,8 @@
         }
 
         .table img {
-            width: 50px;
-            height: 50px;
+            width: 40px;
+            height: 40px;
             object-fit: cover;
             border-radius: 5px;
         }
@@ -199,10 +271,15 @@
         }
 
         .spinner-container {
-            display: flex;
+            display: none;
             justify-content: center;
             align-items: center;
-            height: 100px;
+            height: 20px;
+            margin-bottom: 10px;
+        }
+
+        .spinner-active {
+            display: flex;
         }
 
         .modal-spinner-container {
@@ -252,7 +329,7 @@
 
             .content {
                 margin-left: 0;
-                padding: 20px;
+                padding: 20px 20px 20px 0;
             }
 
             .toggle-sidebar {
@@ -261,6 +338,29 @@
 
             .service-title {
                 font-size: 1.5rem;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .header .search-container {
+                width: 100%;
+            }
+
+            .header .search-container input {
+                width: 100%;
+            }
+
+            .header .btn-group {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .header .btn-group button {
+                flex: 1;
             }
         }
     </style>
@@ -295,8 +395,14 @@
             <h2 class="service-title" id="service-name-title">Loading...</h2>
             <div class="header">
                 <h1>Service Items Management</h1>
-                <div>
-                    <button class="btn btn-custom me-2" onclick="window.location.href='items.html'">
+                <div class="search-container">
+                    <input type="text" id="global-search-input" placeholder="Search items...">
+                    <button id="clear-search" class="clear-search" onclick="clearSearch()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-custom" onclick="window.location.href='items.html'">
                         View All Items
                     </button>
                     <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#itemModal"
@@ -307,8 +413,11 @@
             </div>
             <div class="section">
                 <div class="card">
+                    <div class="card-header">
+                        <h5>Service Items List</h5>
+                    </div>
+                    <div id="table-spinner" class="spinner-container"></div>
                     <div class="card-body p-0">
-                        <div id="table-spinner" class="spinner-container"></div>
                         <table class="table table-hover table-striped mb-0">
                             <thead>
                                 <tr>

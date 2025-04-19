@@ -95,7 +95,26 @@ function showAlert(icon, title, text, callback) {
     });
 }
 
-async function loadCategories() {
+async function searchCategories(query) {
+    const lowerQuery = query.toLowerCase();
+    try {
+        const data = await fetchWithToken(ENDPOINTS.VIEW, { method: "GET" });
+        if (data.status === "success") {
+            return data.data.filter(category =>
+                category.categories_name.toLowerCase().includes(lowerQuery) ||
+                category.categories_name_ar.toLowerCase().includes(lowerQuery) ||
+                category.categories_id.toString().includes(lowerQuery)
+            );
+        }
+        return [];
+    } catch (error) {
+        console.error("Search Categories Error:", error);
+        showAlert("error", "Error", "Failed to search categories: " + error.message);
+        return [];
+    }
+}
+
+async function loadCategories(searchQuery = "") {
     if (!isLoggedIn()) {
         showAlert("error", "Unauthorized", "Please log in to continue.", () => {
             window.location.href = 'login.html';
@@ -108,14 +127,23 @@ async function loadCategories() {
     const spinner = new Spinner({ color: '#f26b0a', lines: 12 }).spin(spinnerContainer.querySelector('.spinner'));
 
     try {
-        const data = await fetchWithToken(ENDPOINTS.VIEW, { method: "GET" });
+        let categories = [];
+        if (searchQuery) {
+            categories = await searchCategories(searchQuery);
+        } else {
+            const data = await fetchWithToken(ENDPOINTS.VIEW, { method: "GET" });
+            if (data.status === "success") {
+                categories = data.data;
+            }
+        }
+
         spinner.stop();
         spinnerContainer.innerHTML = '';
 
-        if (data.status === "success") {
-            const tableBody = document.getElementById("categories-table");
-            tableBody.innerHTML = "";
-            data.data.forEach(category => {
+        const tableBody = document.getElementById("categories-table");
+        tableBody.innerHTML = "";
+        if (categories.length > 0) {
+            categories.forEach(category => {
                 let imageSrc = DEFAULT_IMAGE;
                 if (category.categories_image && category.categories_image !== "null" && category.categories_image !== "") {
                     let correctedImageSrc = category.categories_image;
@@ -148,7 +176,7 @@ async function loadCategories() {
                 `;
             });
         } else {
-            showAlert("error", "Error", data.message || "Failed to load categories.");
+            tableBody.innerHTML = `<tr><td colspan="6">No categories found</td></tr>`;
         }
     } catch (error) {
         spinner.stop();
@@ -291,6 +319,25 @@ async function deleteCategory(id, imageName) {
     }
 }
 
+function handleSearch() {
+    const searchQuery = document.getElementById("global-search-input").value.trim();
+    loadCategories(searchQuery);
+    const clearButton = document.getElementById("clear-search");
+    clearButton.style.display = searchQuery ? "block" : "none";
+}
+
+function clearSearch() {
+    const searchInput = document.getElementById("global-search-input");
+    searchInput.value = "";
+    document.getElementById("clear-search").style.display = "none";
+    loadCategories("");
+}
+
 document.addEventListener("DOMContentLoaded", () => {
-    loadCategories();
+    loadCategories("");
+    const searchInput = document.getElementById("global-search-input");
+    if (searchInput) {
+        searchInput.addEventListener("input", handleSearch);
+        searchInput.addEventListener("blur", clearSearch);
+    }
 });
