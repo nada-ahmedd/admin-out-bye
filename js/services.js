@@ -102,15 +102,24 @@ function showAlert(icon, title, text, callback) {
 async function loadServiceTypes() {
     try {
         const data = await fetchWithToken(ENDPOINTS.VIEW, { method: "GET" });
+        console.log("API Response for loadServiceTypes:", data);
+
         if (data.status === "success" && Array.isArray(data.data)) {
             const serviceTypes = [...new Set(data.data.map(service => service.service_type).filter(type => type))];
+            console.log("Unique service types:", serviceTypes);
+
             const typeSelect = document.getElementById("service-type");
+            if (!typeSelect) {
+                console.error("Service type dropdown not found in DOM!");
+                return false;
+            }
 
             typeSelect.innerHTML = '<option value="">Select Type</option>';
 
             if (serviceTypes.length === 0) {
+                console.warn("No service types found in API response");
                 typeSelect.innerHTML = `<option value="">No types available</option>`;
-                return;
+                return false;
             }
 
             serviceTypes.forEach(type => {
@@ -119,11 +128,18 @@ async function loadServiceTypes() {
                 option.textContent = type.charAt(0).toUpperCase() + type.slice(1);
                 typeSelect.appendChild(option);
             });
+
+            console.log("Dropdown options after population:", Array.from(typeSelect.options).map(opt => opt.value));
+            return true;
         } else {
+            console.error("API response status not success or data is not an array:", data);
             showAlert("error", "Error", data.message || "Failed to load service types.");
+            return false;
         }
     } catch (error) {
+        console.error("Error in loadServiceTypes:", error);
         showAlert("error", "Error", `Failed to load service types: ${error.message}`);
+        return false;
     }
 }
 
@@ -183,7 +199,7 @@ function renderServices(services) {
                     <button class="btn btn-sm btn-info btn-action me-2" onclick="window.location.href='service_items.html?service_id=${service.service_id}'">
                         View Items
                     </button>
-                    <button class="btn btn-sm btn-warning btn-action me-2" onclick="prepareEditService('${service.service_id}', '${service.service_name}', '${service.service_name_ar}', '${service.service_description}', '${service.service_description_ar}', '${service.service_location}', '${service.service_rating}', '${service.service_phone}', '${service.service_email}', '${service.service_website}', '${service.service_type}', '${service.service_active}', '${service.service_image}')">
+                    <button class="btn btn-sm btn-warning btn-action me-2" onclick="prepareEditService('${service.service_id}', '${service.service_name}', '${service.service_name_ar}', '${service.service_description}', '${service.service_description_ar}', '${service.service_location}', '${service.service_rating}', '${service.service_phone}', '${service.service_email}', '${service.service_website}', '${service.service_type}', '${service.service_cat}', '${service.service_active}', '${service.service_image}')">
                         Edit
                     </button>
                     <button class="btn btn-sm btn-danger btn-action" onclick="deleteService('${service.service_id}', '${service.service_image}')">
@@ -223,15 +239,23 @@ function prepareAddService() {
     document.getElementById("serviceForm").reset();
     document.getElementById("service-id").value = "";
     document.getElementById("service-image-old").value = "";
+    document.getElementById("service-cat").value = "";
     document.getElementById("service-active").value = "1";
     document.getElementById("saveServiceBtn").onclick = addService;
 
-    loadServiceTypes().then(() => {
-        new bootstrap.Modal(document.getElementById("serviceModal")).show();
+    loadServiceTypes().then(success => {
+        if (success) {
+            setTimeout(() => {
+                console.log("Opening Add Service Modal");
+                new bootstrap.Modal(document.getElementById("serviceModal")).show();
+            }, 100); // Small delay to ensure DOM update
+        } else {
+            showAlert("error", "Error", "Failed to load service types. Please try again.");
+        }
     });
 }
 
-function prepareEditService(id, name, nameAr, description, descriptionAr, location, rating, phone, email, website, type, active, image) {
+function prepareEditService(id, name, nameAr, description, descriptionAr, location, rating, phone, email, website, type, cat, active, image) {
     document.getElementById("serviceModalLabel").textContent = "Edit Service";
     document.getElementById("service-id").value = id;
     document.getElementById("service-name").value = name || "";
@@ -243,14 +267,22 @@ function prepareEditService(id, name, nameAr, description, descriptionAr, locati
     document.getElementById("service-phone").value = phone || "";
     document.getElementById("service-email").value = email || "";
     document.getElementById("service-website").value = website || "";
+    document.getElementById("service-cat").value = cat || "";
     document.getElementById("service-image-old").value = image || "";
     document.getElementById("service-image").value = "";
     document.getElementById("saveServiceBtn").onclick = editService;
 
-    loadServiceTypes().then(() => {
-        document.getElementById("service-type").value = type || "";
-        document.getElementById("service-active").value = active || "1";
-        new bootstrap.Modal(document.getElementById("serviceModal")).show();
+    loadServiceTypes().then(success => {
+        if (success) {
+            setTimeout(() => {
+                console.log("Opening Edit Service Modal");
+                document.getElementById("service-type").value = type || "";
+                document.getElementById("service-active").value = active || "1";
+                new bootstrap.Modal(document.getElementById("serviceModal")).show();
+            }, 100);
+        } else {
+            showAlert("error", "Error", "Failed to load service types. Please try again.");
+        }
     });
 }
 
@@ -265,11 +297,12 @@ async function addService() {
     const email = document.getElementById("service-email").value.trim();
     const website = document.getElementById("service-website").value.trim();
     const type = document.getElementById("service-type").value.trim();
+    const cat = document.getElementById("service-cat").value.trim();
     const active = document.getElementById("service-active").value;
     const image = document.getElementById("service-image").files[0];
 
-    if (!name || !nameAr || !description || !descriptionAr || !location || !rating || !phone || !email || !type) {
-        showAlert("error", "Error", "Please fill all required fields (Name, Name AR, Description, Description AR, Location, Rating, Phone, Email, Type).");
+    if (!name || !nameAr || !description || !descriptionAr || !location || !rating || !phone || !email || !type || !cat) {
+        showAlert("error", "Error", "Please fill all required fields (Name, Name AR, Description, Description AR, Location, Rating, Phone, Email, Type, Category ID).");
         return;
     }
 
@@ -289,6 +322,7 @@ async function addService() {
     formData.append("service_email", email);
     formData.append("service_website", website);
     formData.append("service_type", type);
+    formData.append("service_cat", cat);
     formData.append("service_active", active);
     if (image) formData.append("files", image);
 
@@ -321,11 +355,12 @@ async function editService() {
     const email = document.getElementById("service-email").value.trim();
     const website = document.getElementById("service-website").value.trim();
     const type = document.getElementById("service-type").value.trim();
+    const cat = document.getElementById("service-cat").value.trim();
     const active = document.getElementById("service-active").value;
     const imageOld = document.getElementById("service-image-old").value;
     const image = document.getElementById("service-image").files[0];
 
-    if (!name && !nameAr && !description && !descriptionAr && !location && !rating && !phone && !email && !website && !type && !active && !image) {
+    if (!name && !nameAr && !description && !descriptionAr && !location && !rating && !phone && !email && !website && !type && !cat && !active && !image) {
         showAlert("error", "Error", "At least one field must be provided to update.");
         return;
     }
@@ -347,6 +382,7 @@ async function editService() {
     if (email) formData.append("service_email", email);
     if (website) formData.append("service_website", website);
     if (type) formData.append("service_type", type);
+    if (cat) formData.append("service_cat", cat);
     if (active) formData.append("service_active", active);
     if (imageOld) formData.append("imageold", imageOld);
     if (image) formData.append("files", image);

@@ -342,7 +342,8 @@
             <a class="nav-link" href="categories.html">Categories</a>
             <a class="nav-link" href="services.html">Services</a>
             <a class="nav-link" href="items.html">Items</a>
-            <a class="nav-link" href="orders.html">Orders</a>
+            <a class="nav-link" href="pending-orders.html">Pending Orders</a>
+            <a class="nav-link" href="archive-orders.html">Archive Orders</a>
             <a class="nav-link" href="users.html">Users</a>
             <a class="nav-link" href="#" onclick="logout()">Logout</a>
         </nav>
@@ -407,42 +408,42 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="service-name" class="form-label">Name</label>
-                                <input type="text" class="form-control" id="service-name">
+                                <input type="text" class="form-control" id="service-name" required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="service-name-ar" class="form-label">Name (Arabic)</label>
-                                <input type="text" class="form-control" id="service-name-ar">
+                                <input type="text" class="form-control" id="service-name-ar" required>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="service-description" class="form-label">Description</label>
-                                <textarea class="form-control" id="service-description" rows="3"></textarea>
+                                <textarea class="form-control" id="service-description" rows="3" required></textarea>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="service-description-ar" class="form-label">Description (Arabic)</label>
-                                <textarea class="form-control" id="service-description-ar" rows="3"></textarea>
+                                <textarea class="form-control" id="service-description-ar" rows="3" required></textarea>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="service-location" class="form-label">Location</label>
-                                <input type="text" class="form-control" id="service-location">
+                                <input type="text" class="form-control" id="service-location" required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="service-rating" class="form-label">Rating</label>
-                                <input type="number" class="form-control" id="service-rating" step="0.1" min="0"
-                                    max="5">
+                                <input type="number" class="form-control" id="service-rating" step="0.1" min="0" max="5"
+                                    required>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="service-phone" class="form-label">Phone</label>
-                                <input type="text" class="form-control" id="service-phone">
+                                <input type="text" class="form-control" id="service-phone" required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="service-email" class="form-label">Email</label>
-                                <input type="email" class="form-control" id="service-email">
+                                <input type="email" class="form-control" id="service-email" required>
                             </div>
                         </div>
                         <div class="row">
@@ -454,11 +455,14 @@
                                 <label for="service-type" class="form-label">Type</label>
                                 <select class="form-control" id="service-type" name="service_type" required>
                                     <option value="">Select Type</option>
-                                    <!-- الخيارات هتتعبّأ ديناميكيًا -->
                                 </select>
                             </div>
                         </div>
                         <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="service-cat" class="form-label">Category ID</label>
+                                <input type="number" class="form-control" id="service-cat" required>
+                            </div>
                             <div class="col-md-6 mb-3">
                                 <label for="service-active" class="form-label">Active</label>
                                 <select class="form-control" id="service-active">
