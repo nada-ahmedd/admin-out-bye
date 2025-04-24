@@ -382,6 +382,20 @@
                 width: 100%;
             }
         }
+                .btn-danger {
+            background: linear-gradient(90deg, #dc3545, #ff6b6b);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(90deg, #ff6b6b, #dc3545);
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 
@@ -493,7 +507,7 @@
                 <div class="card">
                     <div class="card-header">
                         <h5>Pending Orders</h5>
-                        <a href="orders.html" class="btn btn-custom">View All</a>
+                        <a href="pending-orders.html" class="btn btn-custom">View All</a>
                     </div>
                     <div id="orders-spinner" class="spinner-container"></div>
                     <div class="card-body">
@@ -516,7 +530,7 @@
                 <div class="card">
                     <div class="card-header">
                         <h5>Archived Orders</h5>
-                        <a href="orders.html" class="btn btn-custom">View All</a>
+                        <a href="archive-orders.html" class="btn btn-custom">View All</a>
                     </div>
                     <div id="archive-spinner" class="spinner-container"></div>
                     <div class="card-body">
@@ -527,6 +541,7 @@
                                     <th>User ID</th>
                                     <th>Total Price</th>
                                     <th>Date</th>
+                                    <th>Status</th> <!-- Added Status column -->
                                 </tr>
                             </thead>
                             <tbody id="archive-table"></tbody>

@@ -399,8 +399,7 @@
                 </div>
                 <div>
                     <a href="services.html" class="btn btn-custom me-2">Back to Services</a>
-                    <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#serviceModal"
-                        onclick="prepareAddService()">
+                    <button class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#serviceModal">
                         Add Service
                     </button>
                 </div>
@@ -418,8 +417,6 @@
                                     <th>ID</th>
                                     <th>Name</th>
                                     <th>Name AR</th>
-                                    <th>Type</th>
-                                    <th>Category</th>
                                     <th>Image</th>
                                     <th>Active</th>
                                     <th>Created</th>
@@ -493,10 +490,8 @@
                                 <input type="url" class="form-control" id="service-website">
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="service-type" class="form-label">Type</label>
-                                <select class="form-control" id="service-type">
-                                    <!-- الخيارات هتتعبى ديناميكيًا -->
-                                </select>
+                                <label for="service-cat" class="form-label">Category ID</label>
+                                <input type="text" class="form-control" id="service-cat" readonly>
                             </div>
                         </div>
                         <div class="row">

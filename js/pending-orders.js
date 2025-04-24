@@ -146,7 +146,9 @@ async function loadOrders() {
                 console.error("Error parsing pending orders data:", e);
             }
         }
-        originalOrdersData = orders;
+        // Filter orders with status 0 (pending) only
+        originalOrdersData = orders.filter(order => order.orders_status == 0);
+        console.log("Filtered pending orders (status 0):", originalOrdersData);
         renderOrders(originalOrdersData);
 
         ordersSpinner.stop();
@@ -162,11 +164,19 @@ async function loadOrders() {
 
 function renderOrders(orders) {
     const ordersTable = document.getElementById("orders-table");
+    // Check if ordersTable exists
+    if (!ordersTable) {
+        console.error("Error: orders-table element not found in the DOM");
+        return;
+    }
+    console.log("Rendering orders:", orders);
     ordersTable.innerHTML = "";
-    if (orders.length > 0) {
-        orders.forEach(order => {
+    // Double-check to ensure only status 0 orders are rendered
+    const pendingOrders = orders.filter(order => order.orders_status == 0);
+    if (pendingOrders.length > 0) {
+        pendingOrders.forEach(order => {
             const address = order.address_name ? `${order.address_name}, ${order.address_street}, ${order.address_city}` : "No address";
-            console.log("Pending order:", order.orders_id, "orders_status:", order.orders_status);
+            console.log("Rendering order:", order.orders_id, "status:", order.orders_status);
             ordersTable.innerHTML += `
                 <tr>
                     <td>${order.orders_id}</td>
@@ -187,6 +197,7 @@ function renderOrders(orders) {
             `;
         });
     } else {
+        console.log("No pending orders to render");
         ordersTable.innerHTML = `<tr><td colspan="11">No pending orders</td></tr>`;
     }
 }

@@ -1,9 +1,10 @@
-const API_BASE_URL = "https://abdulrahmanantar.com/outbye/admin/services/";
+const API_BASE_URL = "https://abdulrahmanantar.com/outbye/admin/";
 const ENDPOINTS = {
-    ADD: `${API_BASE_URL}add.php`,
-    VIEW: `${API_BASE_URL}view.php`,
-    EDIT: `${API_BASE_URL}edit.php`,
-    DELETE: `${API_BASE_URL}delete.php`
+    ADD: `${API_BASE_URL}services/add.php`,
+    VIEW: `${API_BASE_URL}services/view.php`,
+    EDIT: `${API_BASE_URL}services/edit.php`,
+    DELETE: `${API_BASE_URL}services/delete.php`,
+    CATEGORIES: `${API_BASE_URL}categories/view.php`
 };
 
 const DEFAULT_IMAGE = 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
@@ -59,6 +60,7 @@ async function fetchWithToken(url, options = {}) {
             }
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
+
         const text = await response.text();
         console.log(`Raw response: ${text}`);
 
@@ -68,18 +70,24 @@ async function fetchWithToken(url, options = {}) {
 
         let data;
         try {
-            const jsonMatch = text.match(/{.*}/s);
-            if (jsonMatch) {
-                data = JSON.parse(jsonMatch[0]);
+            const trimmedText = text.trim();
+            if (!trimmedText) {
+                throw new Error("Empty response received");
+            }
+
+            if (trimmedText.startsWith('[')) {
+                data = JSON.parse(trimmedText);
+            } else if (trimmedText.startsWith('{')) {
+                data = JSON.parse(trimmedText);
             } else {
-                throw new Error("No JSON found in response");
+                throw new Error("No valid JSON found in response");
             }
         } catch (e) {
             console.error("JSON Parse Error:", e, "Raw:", text);
             if (text.includes('"status":"success"')) {
                 return { status: "success", message: "Operation completed successfully (parsed from raw response)" };
             }
-            throw new Error("Invalid JSON response");
+            throw new Error("Invalid JSON response: " + e.message);
         }
         return data;
     } catch (error) {
@@ -99,48 +107,28 @@ function showAlert(icon, title, text, callback) {
     });
 }
 
-async function loadServiceTypes() {
+async function getCategoryName(categoryId) {
     try {
-        const data = await fetchWithToken(ENDPOINTS.VIEW, { method: "GET" });
-        console.log("API Response for loadServiceTypes:", data);
-
-        if (data.status === "success" && Array.isArray(data.data)) {
-            const serviceTypes = [...new Set(data.data.map(service => service.service_type).filter(type => type))];
-            console.log("Unique service types:", serviceTypes);
-
-            const typeSelect = document.getElementById("service-type");
-            if (!typeSelect) {
-                console.error("Service type dropdown not found in DOM!");
-                return false;
-            }
-
-            typeSelect.innerHTML = '<option value="">Select Type</option>';
-
-            if (serviceTypes.length === 0) {
-                console.warn("No service types found in API response");
-                typeSelect.innerHTML = `<option value="">No types available</option>`;
-                return false;
-            }
-
-            serviceTypes.forEach(type => {
-                const option = document.createElement("option");
-                option.value = type;
-                option.textContent = type.charAt(0).toUpperCase() + type.slice(1);
-                typeSelect.appendChild(option);
-            });
-
-            console.log("Dropdown options after population:", Array.from(typeSelect.options).map(opt => opt.value));
-            return true;
-        } else {
-            console.error("API response status not success or data is not an array:", data);
-            showAlert("error", "Error", data.message || "Failed to load service types.");
-            return false;
+        const response = await fetchWithToken(ENDPOINTS.CATEGORIES, { method: "GET" });
+        let categories = response;
+        if (response && response.status === "success" && Array.isArray(response.data)) {
+            categories = response.data;
         }
+        const category = categories.find(cat => cat.categories_id === categoryId);
+        return category ? category.categories_name : null;
     } catch (error) {
-        console.error("Error in loadServiceTypes:", error);
-        showAlert("error", "Error", `Failed to load service types: ${error.message}`);
-        return false;
+        console.error("Error fetching category name:", error);
+        return null;
     }
+}
+
+function determineServiceType(categoryName) {
+    if (!categoryName) return "unknown";
+    const name = categoryName.toLowerCase();
+    if (name.includes("restaurant")) return "restaurant";
+    if (name.includes("cafe")) return "cafe";
+    if (name.includes("hotel")) return "hotel";
+    return "other";
 }
 
 async function loadServices() {
@@ -162,11 +150,11 @@ async function loadServices() {
         spinnerContainer.classList.remove("spinner-active");
         spinnerContainer.innerHTML = '';
 
-        if (data.status === "success" && Array.isArray(data.data)) {
-            originalServicesData = data.data;
+        if (Array.isArray(data)) {
+            originalServicesData = data;
             renderServices(originalServicesData);
         } else {
-            showAlert("error", "Error", data.message || "Failed to load services.");
+            showAlert("error", "Error", "Failed to load services: Invalid response format.");
         }
     } catch (error) {
         spinner.stop();
@@ -186,12 +174,14 @@ function renderServices(services) {
         }
 
         const activeStatus = service.service_active === "1" ? "Yes" : "No";
+        const categoryName = service.categories_name || "Unknown"; // Use categories_name from the API response
+
         tableBody.innerHTML += `
             <tr>
                 <td>${service.service_id}</td>
                 <td>${service.service_name}</td>
                 <td>${service.service_name_ar}</td>
-                <td>${service.service_type}</td>
+                <td>${categoryName}</td>
                 <td><img src="${imageSrc}" alt="Service Image" onerror="this.src='${DEFAULT_IMAGE}'"></td>
                 <td>${activeStatus}</td>
                 <td>${service.service_created}</td>
@@ -199,7 +189,7 @@ function renderServices(services) {
                     <button class="btn btn-sm btn-info btn-action me-2" onclick="window.location.href='service_items.html?service_id=${service.service_id}'">
                         View Items
                     </button>
-                    <button class="btn btn-sm btn-warning btn-action me-2" onclick="prepareEditService('${service.service_id}', '${service.service_name}', '${service.service_name_ar}', '${service.service_description}', '${service.service_description_ar}', '${service.service_location}', '${service.service_rating}', '${service.service_phone}', '${service.service_email}', '${service.service_website}', '${service.service_type}', '${service.service_cat}', '${service.service_active}', '${service.service_image}')">
+                    <button class="btn btn-sm btn-warning btn-action me-2" data-bs-toggle="modal" data-bs-target="#serviceModal" data-service-id="${service.service_id}">
                         Edit
                     </button>
                     <button class="btn btn-sm btn-danger btn-action" onclick="deleteService('${service.service_id}', '${service.service_image}')">
@@ -228,7 +218,6 @@ function searchServices() {
     const filteredServices = originalServicesData.filter(service =>
         (service.service_name && service.service_name.toLowerCase().includes(searchInput)) ||
         (service.service_name_ar && service.service_name_ar.toLowerCase().includes(searchInput)) ||
-        (service.service_type && service.service_type.toLowerCase().includes(searchInput)) ||
         (service.service_id && service.service_id.toString().includes(searchInput))
     );
     renderServices(filteredServices);
@@ -242,20 +231,9 @@ function prepareAddService() {
     document.getElementById("service-cat").value = "";
     document.getElementById("service-active").value = "1";
     document.getElementById("saveServiceBtn").onclick = addService;
-
-    loadServiceTypes().then(success => {
-        if (success) {
-            setTimeout(() => {
-                console.log("Opening Add Service Modal");
-                new bootstrap.Modal(document.getElementById("serviceModal")).show();
-            }, 100); // Small delay to ensure DOM update
-        } else {
-            showAlert("error", "Error", "Failed to load service types. Please try again.");
-        }
-    });
 }
 
-function prepareEditService(id, name, nameAr, description, descriptionAr, location, rating, phone, email, website, type, cat, active, image) {
+function prepareEditService(id, name, nameAr, description, descriptionAr, location, rating, phone, email, website, cat, active, image) {
     document.getElementById("serviceModalLabel").textContent = "Edit Service";
     document.getElementById("service-id").value = id;
     document.getElementById("service-name").value = name || "";
@@ -270,20 +248,8 @@ function prepareEditService(id, name, nameAr, description, descriptionAr, locati
     document.getElementById("service-cat").value = cat || "";
     document.getElementById("service-image-old").value = image || "";
     document.getElementById("service-image").value = "";
+    document.getElementById("service-active").value = active || "1";
     document.getElementById("saveServiceBtn").onclick = editService;
-
-    loadServiceTypes().then(success => {
-        if (success) {
-            setTimeout(() => {
-                console.log("Opening Edit Service Modal");
-                document.getElementById("service-type").value = type || "";
-                document.getElementById("service-active").value = active || "1";
-                new bootstrap.Modal(document.getElementById("serviceModal")).show();
-            }, 100);
-        } else {
-            showAlert("error", "Error", "Failed to load service types. Please try again.");
-        }
-    });
 }
 
 async function addService() {
@@ -296,13 +262,12 @@ async function addService() {
     const phone = document.getElementById("service-phone").value.trim();
     const email = document.getElementById("service-email").value.trim();
     const website = document.getElementById("service-website").value.trim();
-    const type = document.getElementById("service-type").value.trim();
     const cat = document.getElementById("service-cat").value.trim();
     const active = document.getElementById("service-active").value;
     const image = document.getElementById("service-image").files[0];
 
-    if (!name || !nameAr || !description || !descriptionAr || !location || !rating || !phone || !email || !type || !cat) {
-        showAlert("error", "Error", "Please fill all required fields (Name, Name AR, Description, Description AR, Location, Rating, Phone, Email, Type, Category ID).");
+    if (!name || !nameAr || !description || !descriptionAr || !location || !rating || !phone || !email || !cat) {
+        showAlert("error", "Error", "Please fill all required fields (Name, Name AR, Description, Description AR, Location, Rating, Phone, Email, Category ID).");
         return;
     }
 
@@ -310,6 +275,14 @@ async function addService() {
         showAlert("error", "Error", "Image size exceeds 5 MB limit.");
         return;
     }
+
+    const categoryName = await getCategoryName(cat);
+    if (!categoryName) {
+        showAlert("error", "Error", "Failed to fetch category name for the provided Category ID.");
+        return;
+    }
+
+    const serviceType = determineServiceType(categoryName);
 
     const formData = new FormData();
     formData.append("service_name", name);
@@ -321,7 +294,7 @@ async function addService() {
     formData.append("service_phone", phone);
     formData.append("service_email", email);
     formData.append("service_website", website);
-    formData.append("service_type", type);
+    formData.append("service_type", serviceType);
     formData.append("service_cat", cat);
     formData.append("service_active", active);
     if (image) formData.append("files", image);
@@ -354,13 +327,12 @@ async function editService() {
     const phone = document.getElementById("service-phone").value.trim();
     const email = document.getElementById("service-email").value.trim();
     const website = document.getElementById("service-website").value.trim();
-    const type = document.getElementById("service-type").value.trim();
     const cat = document.getElementById("service-cat").value.trim();
     const active = document.getElementById("service-active").value;
     const imageOld = document.getElementById("service-image-old").value;
     const image = document.getElementById("service-image").files[0];
 
-    if (!name && !nameAr && !description && !descriptionAr && !location && !rating && !phone && !email && !website && !type && !cat && !active && !image) {
+    if (!name && !nameAr && !description && !descriptionAr && !location && !rating && !phone && !email && !website && !cat && !active && !image) {
         showAlert("error", "Error", "At least one field must be provided to update.");
         return;
     }
@@ -368,6 +340,16 @@ async function editService() {
     if (image && image.size > MAX_FILE_SIZE) {
         showAlert("error", "Error", "Image size exceeds 5 MB limit.");
         return;
+    }
+
+    let serviceType;
+    if (cat) {
+        const categoryName = await getCategoryName(cat);
+        if (!categoryName) {
+            showAlert("error", "Error", "Failed to fetch category name for the provided Category ID.");
+            return;
+        }
+        serviceType = determineServiceType(categoryName);
     }
 
     const formData = new FormData();
@@ -381,7 +363,7 @@ async function editService() {
     if (phone) formData.append("service_phone", phone);
     if (email) formData.append("service_email", email);
     if (website) formData.append("service_website", website);
-    if (type) formData.append("service_type", type);
+    if (serviceType) formData.append("service_type", serviceType);
     if (cat) formData.append("service_cat", cat);
     if (active) formData.append("service_active", active);
     if (imageOld) formData.append("imageold", imageOld);
@@ -448,5 +430,41 @@ document.addEventListener("DOMContentLoaded", () => {
             clearSearchBtn.style.display = "none";
             renderServices(originalServicesData);
         }
+    });
+
+    // Handle Modal events for Add/Edit Service
+    const serviceModal = document.getElementById("serviceModal");
+    serviceModal.addEventListener('shown.bs.modal', (event) => {
+        const button = event.relatedTarget; // Button that triggered the modal
+        const serviceId = button.getAttribute('data-service-id'); // Check if it's Edit button
+        if (serviceId) {
+            const serviceData = originalServicesData.find(service => service.service_id === serviceId);
+            if (serviceData) {
+                prepareEditService(
+                    serviceData.service_id,
+                    serviceData.service_name,
+                    serviceData.service_name_ar,
+                    serviceData.service_description,
+                    serviceData.service_description_ar,
+                    serviceData.service_location,
+                    serviceData.service_rating,
+                    serviceData.service_phone,
+                    serviceData.service_email,
+                    serviceData.service_website,
+                    serviceData.service_cat,
+                    serviceData.service_active,
+                    serviceData.service_image
+                );
+            }
+        } else {
+            prepareAddService();
+        }
+    });
+
+    // Reset modal when hidden
+    serviceModal.addEventListener('hidden.bs.modal', () => {
+        document.getElementById("serviceForm").reset();
+        document.getElementById("serviceModalLabel").textContent = "Add Service";
+        document.getElementById("saveServiceBtn").onclick = null;
     });
 });

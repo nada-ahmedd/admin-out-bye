@@ -6,6 +6,7 @@ const ENDPOINTS = {
     ORDERS: `${API_BASE_URL}orders/view.php`,
     ARCHIVE: `${API_BASE_URL}orders/archive.php`,
     APPROVE: `${API_BASE_URL}orders/approve.php`,
+    REJECT: `${API_BASE_URL}orders/reject_order.php`,
     USERS: `${API_BASE_URL}users/view.php`,
     SEND_NOTIFICATION: `${API_BASE_URL}send_notification_all.php`
 };
@@ -37,12 +38,14 @@ async function fetchWithToken(url, options = {}) {
         });
         throw new Error("No token found");
     }
+
     const token = localStorage.getItem('adminToken');
     options.headers = {
         ...options.headers,
         'Authorization': `Bearer ${token}`
     };
     console.log("Requesting:", url, "Options:", options);
+
     try {
         const response = await fetch(url, options);
         const text = await response.text();
@@ -56,12 +59,26 @@ async function fetchWithToken(url, options = {}) {
             }
             throw new Error(`HTTP error! Status: ${response.status}, Response: ${text}`);
         }
+
+        let data;
         try {
-            return JSON.parse(text);
+            const trimmedText = text.trim();
+            if (!trimmedText) {
+                throw new Error("Empty response received");
+            }
+
+            if (trimmedText.startsWith('[')) {
+                data = JSON.parse(trimmedText);
+            } else if (trimmedText.startsWith('{')) {
+                data = JSON.parse(trimmedText);
+            } else {
+                throw new Error("No valid JSON found in response");
+            }
         } catch (e) {
             console.error("JSON Parse Error:", e, "Raw:", text);
-            throw new Error("Invalid JSON response");
+            throw new Error("Invalid JSON response: " + e.message);
         }
+        return data;
     } catch (error) {
         console.error("Fetch Error:", error);
         throw error;
@@ -149,6 +166,32 @@ async function approveOrder(orderId, userId) {
     }
 }
 
+async function rejectOrder(orderId, userId) {
+    console.log("Rejecting order:", { ordersid: orderId, usersid: userId });
+    try {
+        const formData = new FormData();
+        formData.append('ordersid', orderId);
+        formData.append('usersid', userId);
+        console.log("Request body (form-data):", formData);
+
+        const response = await fetchWithToken(ENDPOINTS.REJECT, {
+            method: "POST",
+            body: formData
+        });
+        console.log("Reject Response:", response);
+        if (response.status === "success") {
+            showAlert("success", "Rejected", "Order rejected successfully", () => {
+                loadDashboard();
+            });
+        } else {
+            showAlert("error", "Error", response.message || "Failed to reject order");
+        }
+    } catch (error) {
+        console.error("Reject Error:", error);
+        showAlert("error", "Error", "Failed to reject order: " + error.message);
+    }
+}
+
 async function loadOverview() {
     const overviewSpinnerContainer = document.getElementById("overview-spinner");
     if (!overviewSpinnerContainer) {
@@ -173,8 +216,8 @@ async function loadOverview() {
         let servicesCount = 0;
         try {
             const servicesData = await fetchWithToken(ENDPOINTS.SERVICES, { method: "GET" });
-            if (servicesData.status === "success") {
-                servicesCount = servicesData.data.length;
+            if (Array.isArray(servicesData)) {
+                servicesCount = servicesData.length;
             }
         } catch (e) {
             console.error("Services Error:", e);
@@ -245,12 +288,12 @@ async function searchAll(query) {
 
     try {
         const servicesData = await fetchWithToken(ENDPOINTS.SERVICES, { method: "GET" });
-        if (servicesData.status === "success") {
-            allData.services = servicesData.data.map(item => ({
+        if (Array.isArray(servicesData)) {
+            allData.services = servicesData.map(item => ({
                 type: "Service",
                 name: item.service_name || "Unknown",
                 image: item.service_image || "",
-                date: item.service_datetime || ""
+                date: item.service_datetime || item.service_created || ""
             })).filter(item => item.name.toLowerCase().includes(lowerQuery));
         }
     } catch (e) {
@@ -323,7 +366,7 @@ async function loadRecentUpdates(searchData = null) {
 
     try {
         let recentUpdates = [];
-        const defaultDate = new Date().toISOString(); // تاريخ افتراضي لو التاريخ مش صحيح
+        const defaultDate = new Date().toISOString();
 
         if (searchData) {
             recentUpdates = [
@@ -359,12 +402,12 @@ async function loadRecentUpdates(searchData = null) {
             let recentServices = [];
             try {
                 const servicesData = await fetchWithToken(ENDPOINTS.SERVICES, { method: "GET" });
-                if (servicesData.status === "success") {
-                    recentServices = servicesData.data.slice(0, 4).map(item => ({
+                if (Array.isArray(servicesData)) {
+                    recentServices = servicesData.slice(0, 4).map(item => ({
                         type: "Service",
                         name: item.service_name || "Unknown",
                         image: item.service_image || "",
-                        date: item.service_datetime && !isNaN(new Date(item.service_datetime)) ? item.service_datetime : defaultDate
+                        date: item.service_datetime && !isNaN(new Date(item.service_datetime)) ? item.service_datetime : (item.service_created && !isNaN(new Date(item.service_created)) ? item.service_created : defaultDate)
                     }));
                 }
             } catch (e) {
@@ -490,12 +533,12 @@ async function loadPendingOrders(searchData = null) {
     try {
         let ordersData = [];
         if (searchData) {
-            ordersData = searchData.orders.slice(0, 5);
+            ordersData = searchData.orders.filter(order => order.orders_status == 0).slice(0, 5);
         } else {
             try {
                 const response = await fetchWithToken(ENDPOINTS.ORDERS, { method: "GET" });
                 if (response.status === "success") {
-                    ordersData = response.data.slice(0, 5);
+                    ordersData = response.data.filter(order => order.orders_status == 0).slice(0, 5);
                 }
             } catch (e) {
                 console.error("Orders Error:", e);
@@ -517,7 +560,10 @@ async function loadPendingOrders(searchData = null) {
                         <td>${order.orders_usersid}</td>
                         <td>${order.orders_totalprice || 0}</td>
                         <td>${order.orders_datetime}</td>
-                        <td><button class="btn btn-sm btn-custom" onclick="approveOrder(${order.orders_id}, ${order.orders_usersid})">Approve</button></td>
+                        <td>
+                            <button class="btn btn-sm btn-custom" onclick="approveOrder(${order.orders_id}, ${order.orders_usersid})">Approve</button>
+                            <button class="btn btn-sm btn-danger" onclick="rejectOrder(${order.orders_id}, ${order.orders_usersid})">Reject</button>
+                        </td>
                     </tr>
                 `;
             });
@@ -567,17 +613,19 @@ async function loadArchivedOrders(searchData = null) {
         archiveTable.innerHTML = "";
         if (archiveData.length > 0) {
             archiveData.forEach(order => {
+                const statusText = order.orders_status == 1 ? "Rejected" : order.orders_status == 2 ? "Approved" : "Unknown";
                 archiveTable.innerHTML += `
                     <tr>
                         <td>${order.orders_id}</td>
                         <td>${order.orders_usersid}</td>
                         <td>${order.orders_totalprice || 0}</td>
                         <td>${order.orders_datetime}</td>
+                        <td>${statusText}</td>
                     </tr>
                 `;
             });
         } else {
-            archiveTable.innerHTML = `<tr><td colspan="4">No archived orders</td></tr>`;
+            archiveTable.innerHTML = `<tr><td colspan="5">No archived orders</td></tr>`;
         }
     } catch (error) {
         console.error("Archived Orders Error:", error);
@@ -640,7 +688,6 @@ document.addEventListener("DOMContentLoaded", () => {
         searchInput.addEventListener("blur", clearSearch);
     }
 
-    // تحديث تلقائي كل 30 ثانية
     setInterval(() => {
         const searchQuery = document.getElementById("global-search-input")?.value.trim() || "";
         loadDashboard(searchQuery);

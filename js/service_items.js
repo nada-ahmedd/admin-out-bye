@@ -64,14 +64,21 @@ async function fetchWithToken(url, options = {}) {
             }
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
+
         const text = await response.text();
         let data;
         try {
-            const jsonMatch = text.match(/{.*}/s);
-            if (jsonMatch) {
-                data = JSON.parse(jsonMatch[0]);
+            const cleanedText = text.replace(/^\ufeff/, '').trim();
+            if (!cleanedText) {
+                throw new Error("Empty response received");
+            }
+
+            if (cleanedText.startsWith('[')) {
+                data = JSON.parse(cleanedText);
+            } else if (cleanedText.startsWith('{')) {
+                data = JSON.parse(cleanedText);
             } else {
-                throw new Error("No JSON found in response");
+                throw new Error("No valid JSON found in response");
             }
         } catch (e) {
             if (text.includes('"status":"success"')) {
@@ -133,19 +140,25 @@ async function loadItems() {
         spinnerContainer.classList.remove("spinner-active");
         spinnerContainer.innerHTML = '';
 
-        if (itemsData.status === "success" && servicesData.status === "success") {
-            // جلب الأيتِمز بناءً على service_id فقط لو category_id مش موجود
+        if (itemsData.status === "success" && Array.isArray(itemsData.data)) {
             let filteredItems = itemsData.data.filter(item => item.service_id === serviceId);
-            
-            // لو category_id موجود، نضيف شرط الفلترة بيه
             if (categoryId) {
                 filteredItems = filteredItems.filter(item => item.items_cat === categoryId);
             }
 
             originalItemsData = filteredItems;
 
-            const service = servicesData.data.find(s => s.service_id === serviceId);
-            const serviceName = service ? service.service_name : "Unknown Service";
+            let serviceName = "Unknown Service";
+            if (Array.isArray(servicesData)) {
+                const service = servicesData.find(s => s.service_id === serviceId);
+                serviceName = service ? service.service_name : "Unknown Service";
+                categoryId = service ? service.service_cat : categoryId;
+            }
+
+            if (!categoryId && filteredItems.length > 0) {
+                categoryId = filteredItems[0].items_cat || "";
+            }
+
             const serviceNameTitle = document.getElementById("service-name-title");
             if (serviceNameTitle) {
                 serviceNameTitle.textContent = serviceName;
@@ -153,7 +166,7 @@ async function loadItems() {
 
             renderItems(originalItemsData);
         } else {
-            showAlert("error", "Error", itemsData.message || servicesData.message || "Failed to load data.");
+            showAlert("error", "Error", "Failed to load data.");
             const serviceNameTitle = document.getElementById("service-name-title");
             if (serviceNameTitle) {
                 serviceNameTitle.textContent = "Error Loading Service";
@@ -263,10 +276,13 @@ function prepareAddItem() {
         itemForm.reset();
         itemId.value = "";
         itemImageOld.value = "";
-        itemServiceId.value = serviceId;
+        itemServiceId.value = serviceId || "";
         itemCat.value = categoryId || "";
+
         saveItemBtn.onclick = addItem;
         new bootstrap.Modal(document.getElementById("itemModal")).show();
+    } else {
+        console.error("Required form elements not found");
     }
 }
 
@@ -365,7 +381,7 @@ async function addItem() {
             bootstrap.Modal.getInstance(document.getElementById("itemModal")).hide();
             loadItems();
         } else {
-            showAlert("error", "Error", data.message || "Failed to add item.");
+            showAlert("error", "Error", data.message ? `Failed to add item: ${data.message}` : "Failed to add item.");
         }
     } catch (error) {
         spinner.stop();
@@ -435,7 +451,7 @@ async function editItem() {
             bootstrap.Modal.getInstance(document.getElementById("itemModal")).hide();
             loadItems();
         } else {
-            showAlert("error", "Error", data.message || "Failed to update item.");
+            showAlert("error", "Error", data.message ? `Failed to update item: ${data.message}` : "Failed to update item.");
         }
     } catch (error) {
         spinner.stop();
@@ -468,7 +484,7 @@ async function deleteItem(id, imageName) {
             showAlert("success", "Success", data.message || "Item deleted successfully.");
             loadItems();
         } else {
-            showAlert("error", "Error", data.message || "Failed to delete item.");
+            showAlert("error", "Error", data.message ? `Failed to delete item: ${data.message}` : "Failed to delete item.");
         }
     } catch (error) {
         showAlert("error", "Error", `Failed to delete item: ${error.message}`);
