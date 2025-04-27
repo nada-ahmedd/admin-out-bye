@@ -154,11 +154,13 @@ function renderArchive(archiveOrders) {
                     <td>${order.orders_coupon == 1 ? "Yes" : "No"}</td>
                     <td>${order.orders_paymentmethod == 0 ? "Cash" : "Other"}</td>
                     <td>${order.orders_datetime}</td>
+                    <td>${order.orders_rating || "Not rated"}</td>
+                    <td>${order.orders_noterating || "No comment"}</td>
                 </tr>
             `;
         });
     } else {
-        archiveTable.innerHTML = `<tr><td colspan="10">No archived orders</td></tr>`;
+        archiveTable.innerHTML = `<tr><td colspan="12">No archived orders</td></tr>`;
     }
 }
 
@@ -211,7 +213,9 @@ function searchOrders() {
             (order.orders_id && order.orders_id.toString().includes(searchInput)) ||
             (order.orders_usersid && order.orders_usersid.toString().includes(searchInput)) ||
             (address && address.toLowerCase().includes(searchInput)) ||
-            (order.orders_type != null && (order.orders_type == 0 ? "delivery" : "pickup").includes(searchInput))
+            (order.orders_type != null && (order.orders_type == 0 ? "delivery" : "pickup").includes(searchInput)) ||
+            (order.orders_rating && order.orders_rating.toString().includes(searchInput)) ||
+            (order.orders_noterating && order.orders_noterating.toLowerCase().includes(searchInput))
         );
     });
 
