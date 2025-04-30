@@ -728,8 +728,9 @@ function renderFeedback(feedback) {
         const card = `
             <div class="feedback-card">
                 <img src="${image}" alt="${item.users_name}" loading="lazy" onerror="this.src='${DEFAULT_IMAGE}'">
-                <h5>Feedback #${item.id}</h5>
-                <div class="feedback-info">User: ${item.users_name}</div>
+                <h5>${item.users_name}</h5>
+                <div class="feedback-info">User ID: ${item.user_id}</div>
+                <div class="feedback-info">Comment: ${item.comment}</div>
                 <div class="feedback-info">Rating: ${stars}</div>
                 <div class="feedback-info">Service: ${item.service_type}</div>
             </div>
