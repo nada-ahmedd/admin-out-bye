@@ -5,6 +5,8 @@ const ENDPOINTS = {
     DELETE_USER: `${API_BASE_URL}users/delete.php`
 };
 
+const DEFAULT_IMAGE = 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+
 let originalUsersData = [];
 
 function isLoggedIn() {
@@ -68,7 +70,8 @@ function showAlert(icon, title, text) {
         icon,
         title,
         text,
-        confirmButtonText: 'OK'
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#f26b0a'
     });
 }
 
@@ -82,6 +85,7 @@ async function editUser(userId, currentName, currentEmail, currentPhone) {
         focusConfirm: false,
         showCancelButton: true,
         confirmButtonText: 'Save',
+        confirmButtonColor: '#f26b0a',
         preConfirm: () => {
             return {
                 users_id: userId,
@@ -126,7 +130,8 @@ async function deleteUser(userId) {
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Yes, delete it!',
-        cancelButtonText: 'No, cancel'
+        cancelButtonText: 'No, cancel',
+        confirmButtonColor: '#f26b0a'
     });
 
     if (result.isConfirmed) {
@@ -154,34 +159,36 @@ async function deleteUser(userId) {
 }
 
 function renderUsers(users) {
-    const usersTable = document.getElementById("users-table");
-    if (!usersTable) {
-        console.error("Users table not found");
+    const usersGrid = document.getElementById("users-grid");
+    if (!usersGrid) {
+        console.error("Users grid not found");
         return;
     }
 
-    usersTable.innerHTML = "";
+    usersGrid.innerHTML = "";
     if (users.length === 0) {
-        usersTable.innerHTML = `<tr><td colspan="7">No users found</td></tr>`;
+        usersGrid.innerHTML = '<p class="text-center text-muted w-100">No users found.</p>';
         return;
     }
 
     users.forEach(user => {
-        const avatar = user.users_image || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
-        usersTable.innerHTML += `
-            <tr>
-                <td>${user.users_id}</td>
-                <td>${user.users_name}</td>
-                <td>${user.users_email}</td>
-                <td>${user.users_phone}</td>
-                <td><img src="${avatar}" alt="User Image" onerror="this.src='https://cdn-icons-png.flaticon.com/512/149/149071.png'"></td>
-                <td>${user.users_create}</td>
-                <td>
-                    <button class="btn btn-sm btn-custom me-2" onclick="editUser(${user.users_id}, '${user.users_name}', '${user.users_email}', '${user.users_phone}')">Edit</button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.users_id})">Delete</button>
-                </td>
-            </tr>
+        const avatar = user.users_image || DEFAULT_IMAGE;
+        const card = `
+            <div class="user-card">
+                <img src="${avatar}" alt="User Image" loading="lazy" onerror="this.src='${DEFAULT_IMAGE}'">
+                <h5>User #${user.users_id}</h5>
+                <div class="user-info">Name: ${user.users_name}</div>
+                <div class="user-info">Email: ${user.users_email}</div>
+                <div class="user-info">Phone: ${user.users_phone}</div>
+                <div class="actions">
+                    <div>
+                        <button class="btn btn-action btn-edit" data-tooltip="Edit user" onclick="editUser(${user.users_id}, '${user.users_name}', '${user.users_email}', '${user.users_phone}')">Edit</button>
+                        <button class="btn btn-action btn-delete" data-tooltip="Delete user" onclick="deleteUser(${user.users_id})">Delete</button>
+                    </div>
+                </div>
+            </div>
         `;
+        usersGrid.innerHTML += card;
     });
 }
 
@@ -203,6 +210,9 @@ function searchUsers() {
     }
 
     const searchValue = searchInput.value.trim().toLowerCase();
+    const clearSearchBtn = document.getElementById("clear-search");
+    clearSearchBtn.style.display = searchValue ? "block" : "none";
+
     if (!searchValue) {
         renderUsers(originalUsersData);
         return;
@@ -224,14 +234,13 @@ async function loadUsers() {
         return;
     }
 
-    const usersSpinnerContainer = document.getElementById("users-spinner");
-    if (!usersSpinnerContainer) {
-        console.error("Spinner container not found");
+    const usersSkeleton = document.getElementById("users-skeleton");
+    if (!usersSkeleton) {
+        console.error("Skeleton grid not found");
         return;
     }
 
-    usersSpinnerContainer.innerHTML = '<div class="spinner"></div>';
-    const usersSpinner = new Spinner({ color: '#f26b0a', lines: 12 }).spin(usersSpinnerContainer.querySelector('.spinner'));
+    usersSkeleton.style.display = "grid";
 
     try {
         let usersData = { status: "error", data: [] };
@@ -242,21 +251,19 @@ async function loadUsers() {
             console.error("Users Error:", e);
         }
 
-        usersSpinner.stop();
-        usersSpinnerContainer.innerHTML = '';
+        usersSkeleton.style.display = "none";
 
         if (usersData.status === "success" && usersData.data.length > 0) {
             originalUsersData = usersData.data;
             renderUsers(originalUsersData);
         } else {
-            const usersTable = document.getElementById("users-table");
-            if (usersTable) {
-                usersTable.innerHTML = `<tr><td colspan="7">No users found</td></tr>`;
+            const usersGrid = document.getElementById("users-grid");
+            if (usersGrid) {
+                usersGrid.innerHTML = '<p class="text-center text-muted w-100">No users found.</p>';
             }
         }
     } catch (error) {
-        usersSpinner.stop();
-        usersSpinnerContainer.innerHTML = '';
+        usersSkeleton.style.display = "none";
         showAlert("error", "Error", "Failed to load users: " + error.message);
     }
 }
@@ -269,7 +276,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (searchInput && clearSearchBtn) {
         searchInput.addEventListener("input", () => {
-            clearSearchBtn.style.display = searchInput.value ? "block" : "none";
             searchUsers();
         });
 

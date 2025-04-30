@@ -114,6 +114,76 @@ async function searchCategories(query) {
     }
 }
 
+// Function to dynamically load categories into the grid
+function loadCategoriesIntoGrid(categories) {
+    const grid = document.getElementById('categories-grid');
+    grid.innerHTML = ''; // Clear existing content
+
+    if (!categories || categories.length === 0) {
+        grid.innerHTML = '<p class="text-center text-muted w-100">No categories found.</p>';
+        return;
+    }
+
+    categories.forEach(category => {
+        let imageSrc = DEFAULT_IMAGE;
+        if (category.categories_image && category.categories_image !== "null" && category.categories_image !== "") {
+            let correctedImageSrc = category.categories_image;
+            if (correctedImageSrc.includes('/outbye/categories/')) {
+                const fileName = correctedImageSrc.split('/').pop();
+                correctedImageSrc = `${CORRECT_IMAGE_PATH}${fileName}`;
+            }
+            imageSrc = correctedImageSrc;
+        }
+
+        const card = `
+            <div class="category-card">
+                <img src="${imageSrc}" alt="${category.categories_name}" onerror="this.src='${DEFAULT_IMAGE}'">
+                <h5>${category.categories_name || 'Unnamed Category'}</h5>
+                <div class="category-info">Arabic Name: ${category.categories_name_ar || 'N/A'}</div>
+                <div class="actions">
+                    <div>
+                        <button class="btn btn-action btn-view" onclick="viewServices(${category.categories_id})">View</button>
+                        <button class="btn btn-action btn-edit" onclick="prepareEditCategory(${category.categories_id}, '${category.categories_name}', '${category.categories_name_ar}', '${category.categories_image}')">Edit</button>
+                        <button class="btn btn-action btn-delete" onclick="deleteCategory(${category.categories_id}, '${category.categories_image}')">Delete</button>
+                    </div>
+                    <button class="btn-show-more" onclick="showCategoryDetails(${category.categories_id}, '${category.categories_name}', '${category.categories_name_ar}', '${category.categories_image}', '${category.categories_datetime}')">Show More</button>
+                </div>
+            </div>
+        `;
+        grid.innerHTML += card;
+    });
+}
+
+// Function to show category details in a modal
+function showCategoryDetails(id, name, nameAr, image, datetime) {
+    let imageSrc = DEFAULT_IMAGE;
+    if (image && image !== "null" && image !== "") {
+        if (image.includes('/outbye/categories/')) {
+            const fileName = image.split('/').pop();
+            imageSrc = `${CORRECT_IMAGE_PATH}${fileName}`;
+        } else {
+            imageSrc = image;
+        }
+    }
+
+    Swal.fire({
+        title: `Category: ${name}`,
+        html: `
+            <div style="text-align: center;">
+                <img src="${imageSrc}" alt="${name}" style="width: 100%; max-width: 200px; border-radius: 8px; margin-bottom: 15px;" onerror="this.src='${DEFAULT_IMAGE}'">
+                <div style="text-align: left; font-size: 0.9rem; line-height: 1.5;">
+                    <p><strong>ID:</strong> ${id}</p>
+                    <p><strong>Name:</strong> ${name || 'N/A'}</p>
+                    <p><strong>Arabic Name:</strong> ${nameAr || 'N/A'}</p>
+                    <p><strong>Date Added:</strong> ${datetime || 'N/A'}</p>
+                </div>
+            </div>
+        `,
+        confirmButtonText: 'Close',
+        confirmButtonColor: '#f26b0a'
+    });
+}
+
 async function loadCategories(searchQuery = "") {
     if (!isLoggedIn()) {
         showAlert("error", "Unauthorized", "Please log in to continue.", () => {
@@ -123,7 +193,7 @@ async function loadCategories(searchQuery = "") {
     }
 
     const spinnerContainer = document.getElementById("table-spinner");
-    spinnerContainer.innerHTML = '<div class="spinner"></div>';
+    spinnerContainer.classList.add("spinner-active");
     const spinner = new Spinner({ color: '#f26b0a', lines: 12 }).spin(spinnerContainer.querySelector('.spinner'));
 
     try {
@@ -137,51 +207,12 @@ async function loadCategories(searchQuery = "") {
             }
         }
 
-        spinner.stop();
-        spinnerContainer.innerHTML = '';
-
-        const tableBody = document.getElementById("categories-table");
-        tableBody.innerHTML = "";
-        if (categories.length > 0) {
-            categories.forEach(category => {
-                let imageSrc = DEFAULT_IMAGE;
-                if (category.categories_image && category.categories_image !== "null" && category.categories_image !== "") {
-                    let correctedImageSrc = category.categories_image;
-                    if (correctedImageSrc.includes('/outbye/categories/')) {
-                        const fileName = correctedImageSrc.split('/').pop();
-                        correctedImageSrc = `${CORRECT_IMAGE_PATH}${fileName}`;
-                    }
-                    imageSrc = correctedImageSrc;
-                }
-
-                tableBody.innerHTML += `
-                    <tr>
-                        <td>${category.categories_id}</td>
-                        <td>${category.categories_name}</td>
-                        <td>${category.categories_name_ar}</td>
-                        <td><img src="${imageSrc}" alt="Category Image" onerror="this.src='${DEFAULT_IMAGE}'"></td>
-                        <td>${category.categories_datetime}</td>
-                        <td>
-                            <button class="btn btn-sm btn-info btn-action me-2" onclick="viewServices(${category.categories_id})">
-                                View
-                            </button>
-                            <button class="btn btn-sm btn-warning btn-action me-2" onclick="prepareEditCategory('${category.categories_id}', '${category.categories_name}', '${category.categories_name_ar}', '${category.categories_image}')">
-                                Edit
-                            </button>
-                            <button class="btn btn-sm btn-danger btn-action" onclick="deleteCategory('${category.categories_id}', '${category.categories_image}')">
-                                Delete
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
-        } else {
-            tableBody.innerHTML = `<tr><td colspan="6">No categories found</td></tr>`;
-        }
+        loadCategoriesIntoGrid(categories);
     } catch (error) {
-        spinner.stop();
-        spinnerContainer.innerHTML = '';
         showAlert("error", "Error", `Failed to load categories: ${error.message}`);
+    } finally {
+        spinner.stop();
+        spinnerContainer.classList.remove("spinner-active");
     }
 }
 
@@ -214,7 +245,7 @@ async function addCategory() {
     const image = document.getElementById("category-image").files[0];
 
     if (!name || !nameAr) {
-        showAlert("error", "Error", "Name and Name (Arabic) are required.");
+        showAlert("error", "Error", "Name and Arabic Name are required.");
         return;
     }
 
@@ -255,7 +286,7 @@ async function editCategory() {
     const image = document.getElementById("category-image").files[0];
 
     if (!name && !nameAr && !image) {
-        showAlert("error", "Error", "At least one field (Name, Name (Arabic), or Image) must be provided.");
+        showAlert("error", "Error", "At least one field (Name, Arabic Name, or Image) must be provided.");
         return;
     }
 

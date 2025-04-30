@@ -10,6 +10,10 @@ const DEFAULT_IMAGE = 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 let originalItemsData = [];
+let filteredItemsData = [];
+let displayedItemsCount = 10;
+let isItemsExpanded = false;
+const ITEMS_PER_PAGE = 10;
 
 function isLoggedIn() {
     return localStorage.getItem('isAdminLoggedIn') === 'true' && localStorage.getItem('adminToken');
@@ -93,7 +97,8 @@ function showAlert(icon, title, text, callback) {
         icon,
         title,
         text,
-        confirmButtonText: 'OK'
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#f26b0a'
     }).then(() => {
         if (callback) callback();
     });
@@ -107,93 +112,158 @@ async function loadItems() {
         return;
     }
 
-    const spinnerContainer = document.getElementById("table-spinner");
+    const spinnerContainer = document.getElementById("items-spinner");
     spinnerContainer.classList.add("spinner-active");
-    spinnerContainer.innerHTML = '<div class="spinner"></div>';
-    const spinner = new Spinner({ color: '#f26b0a', lines: 12 }).spin(spinnerContainer.querySelector('.spinner'));
+    const spinner = new Spinner({ color: '#f26b0a', lines: 12 }).spin(spinnerContainer);
 
     try {
         const data = await fetchWithToken(ENDPOINTS.VIEW, { method: "GET" });
         spinner.stop();
         spinnerContainer.classList.remove("spinner-active");
-        spinnerContainer.innerHTML = '';
 
         if (data.status === "success") {
             originalItemsData = data.data;
-            renderItems(originalItemsData);
+            filteredItemsData = [...originalItemsData];
+            renderItems(filteredItemsData, displayedItemsCount);
         } else {
             showAlert("error", "Error", data.message || "Failed to load items.");
         }
     } catch (error) {
         spinner.stop();
         spinnerContainer.classList.remove("spinner-active");
-        spinnerContainer.innerHTML = '';
         showAlert("error", "Error", `Failed to load items: ${error.message}`);
     }
 }
 
-function renderItems(items) {
-    const tableBody = document.getElementById("items-table");
-    tableBody.innerHTML = "";
-    if (items.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="12">No items found.</td></tr>`;
+function renderItems(items, limit = displayedItemsCount) {
+    const grid = document.getElementById("items-grid");
+    grid.innerHTML = '';
+
+    if (!items || items.length === 0) {
+        grid.innerHTML = '<p class="text-center text-muted w-100">No items found.</p>';
+        document.getElementById("items-view-more").style.display = "none";
         return;
     }
 
-    items.forEach(item => {
+    const itemsToShow = items.slice(0, limit);
+    itemsToShow.forEach(item => {
         const imageSrc = item.items_image && item.items_image !== "null" && item.items_image !== ""
             ? item.items_image
             : DEFAULT_IMAGE;
-        const activeStatus = item.items_active === "1" ? "Yes" : "No";
-        const discount = item.items_discount || "N/A";
-        tableBody.innerHTML += `
-            <tr>
-                <td>${item.items_id}</td>
-                <td>${item.service_id}</td>
-                <td>${item.items_name}</td>
-                <td>${item.items_name_ar}</td>
-                <td><img src="${imageSrc}" alt="Item Image" onerror="this.src='${DEFAULT_IMAGE}'"></td>
-                <td>${item.items_count}</td>
-                <td>${activeStatus}</td>
-                <td>${item.items_price}</td>
-                <td>${discount}</td>
-                <td>${item.items_cat}</td>
-                <td>${item.items_date}</td>
-                <td>
-                    <button class="btn btn-sm btn-warning btn-action me-2" onclick="prepareEditItem('${item.items_id}', '${item.service_id}', '${item.items_name}', '${item.items_name_ar}', '${item.items_des}', '${item.items_des_ar}', '${item.items_count}', '${item.items_active}', '${item.items_price}', '${item.items_discount}', '${item.items_cat}', '${item.items_image}')">
-                        Edit
-                    </button>
-                    <button class="btn btn-sm btn-danger btn-action" onclick="deleteItem('${item.items_id}', '${item.items_image}')">
-                        Delete
-                    </button>
-                </td>
-            </tr>
+
+        const card = `
+            <div class="item-card">
+                <img src="${imageSrc}" alt="Item Image" onerror="this.src='${DEFAULT_IMAGE}'">
+                <h5>Item #${item.items_id}</h5>
+                <div class="item-info">Name: ${item.items_name}</div>
+                <div class="item-info">Price: ${item.items_price}</div>
+                <div class="actions">
+                    <div>
+                        <button class="btn btn-action btn-edit" data-tooltip="Edit item" onclick="prepareEditItem('${item.items_id}', '${item.service_id}', '${item.items_name}', '${item.items_name_ar}', '${item.items_des}', '${item.items_des_ar}', '${item.items_count}', '${item.items_active}', '${item.items_price}', '${item.items_discount}', '${item.items_cat}', '${item.items_image}')">Edit</button>
+                        <button class="btn btn-action btn-delete" data-tooltip="Delete item" onclick="deleteItem('${item.items_id}', '${item.items_image}')">Delete</button>
+                    </div>
+                    <button class="btn-show-more" onclick="showItemDetails('${item.items_id}', '${item.service_id}', '${item.items_name}', '${item.items_name_ar}', '${item.items_des}', '${item.items_des_ar}', '${item.items_count}', '${item.items_active}', '${item.items_price}', '${item.items_discount}', '${item.items_cat}', '${item.items_date}', '${item.items_image}')">Show More</button>
+                </div>
+            </div>
         `;
+        grid.innerHTML += card;
     });
+
+    const viewMoreContainer = document.getElementById("items-view-more");
+    const toggleBtn = document.getElementById("items-toggle-btn");
+    const toggleBtnText = toggleBtn.querySelector('span');
+    const toggleBtnIcon = toggleBtn.querySelector('i');
+
+    if (items.length > ITEMS_PER_PAGE) {
+        viewMoreContainer.style.display = "block";
+        if (isItemsExpanded) {
+            toggleBtnText.textContent = "View Less";
+            toggleBtn.classList.add("view-less");
+            toggleBtnIcon.classList.replace("fa-chevron-down", "fa-chevron-up");
+        } else {
+            toggleBtnText.textContent = "View More";
+            toggleBtn.classList.remove("view-less");
+            toggleBtnIcon.classList.replace("fa-chevron-up", "fa-chevron-down");
+        }
+        toggleBtn.classList.add("pulse");
+        setTimeout(() => toggleBtn.classList.remove("pulse"), 500);
+    } else {
+        viewMoreContainer.style.display = "none";
+    }
+}
+
+function showItemDetails(id, serviceId, name, nameAr, description, descriptionAr, count, active, price, discount, cat, date, image) {
+    const imageSrc = image && image !== "null" && image !== "" ? image : DEFAULT_IMAGE;
+    const activeStatus = active === "1" ? "Yes" : "No";
+    const discountValue = discount || "N/A";
+
+    Swal.fire({
+        title: `Item: ${name}`,
+        html: `
+            <div style="text-align: center;">
+                <img src="${imageSrc}" alt="${name}" style="width: 100%; max-width: 200px; border-radius: 8px; margin-bottom: 15px;" onerror="this.src='${DEFAULT_IMAGE}'">
+                <div style="text-align: left; font-size: 0.9rem; line-height: 1.5;">
+                    <p><strong>ID:</strong> ${id}</p>
+                    <p><strong>Service ID:</strong> ${serviceId || 'N/A'}</p>
+                    <p><strong>Name:</strong> ${name || 'N/A'}</p>
+                    <p><strong>Name (Arabic):</strong> ${nameAr || 'N/A'}</p>
+                    <p><strong>Description:</strong> ${description || 'N/A'}</p>
+                    <p><strong>Description (Arabic):</strong> ${descriptionAr || 'N/A'}</p>
+                    <p><strong>Count:</strong> ${count || 'N/A'}</p>
+                    <p><strong>Active:</strong> ${activeStatus}</p>
+                    <p><strong>Price:</strong> ${price || 'N/A'}</p>
+                    <p><strong>Discount:</strong> ${discountValue}</p>
+                    <p><strong>Category ID:</strong> ${cat || 'N/A'}</p>
+                    <p><strong>Date Added:</strong> ${date || 'N/A'}</p>
+                </div>
+            </div>
+        `,
+        confirmButtonText: 'Close',
+        confirmButtonColor: '#f26b0a'
+    });
+}
+
+function toggleView() {
+    isItemsExpanded = !isItemsExpanded;
+    displayedItemsCount = isItemsExpanded ? filteredItemsData.length : ITEMS_PER_PAGE;
+    renderItems(filteredItemsData, displayedItemsCount);
+    const grid = document.getElementById("items-grid");
+    grid.scrollIntoView({ behavior: "smooth", block: "end" });
 }
 
 function clearSearch() {
     const searchInput = document.getElementById("global-search-input");
     searchInput.value = "";
     document.getElementById("clear-search").style.display = "none";
-    renderItems(originalItemsData);
+    filteredItemsData = [...originalItemsData];
+    displayedItemsCount = ITEMS_PER_PAGE;
+    isItemsExpanded = false;
+    renderItems(filteredItemsData, displayedItemsCount);
 }
 
 function searchItems() {
     const searchInput = document.getElementById("global-search-input").value.trim().toLowerCase();
+    const clearSearchBtn = document.getElementById("clear-search");
+    clearSearchBtn.style.display = searchInput ? "block" : "none";
+
     if (!searchInput) {
-        renderItems(originalItemsData);
+        filteredItemsData = [...originalItemsData];
+        displayedItemsCount = ITEMS_PER_PAGE;
+        isItemsExpanded = false;
+        renderItems(filteredItemsData, displayedItemsCount);
         return;
     }
 
-    const filteredItems = originalItemsData.filter(item =>
+    filteredItemsData = originalItemsData.filter(item =>
         (item.items_id && item.items_id.toString().includes(searchInput)) ||
         (item.service_id && item.service_id.toString().includes(searchInput)) ||
         (item.items_name && item.items_name.toLowerCase().includes(searchInput)) ||
         (item.items_name_ar && item.items_name_ar.toLowerCase().includes(searchInput)) ||
         (item.items_cat && item.items_cat.toString().includes(searchInput))
     );
-    renderItems(filteredItems);
+    displayedItemsCount = ITEMS_PER_PAGE;
+    isItemsExpanded = false;
+    renderItems(filteredItemsData, displayedItemsCount);
 }
 
 function prepareAddItem() {
@@ -201,6 +271,7 @@ function prepareAddItem() {
     document.getElementById("itemForm").reset();
     document.getElementById("item-id").value = "";
     document.getElementById("item-image-old").value = "";
+    document.getElementById("item-active").value = "1";
     document.getElementById("saveItemBtn").onclick = addItem;
     new bootstrap.Modal(document.getElementById("itemModal")).show();
 }
@@ -265,6 +336,10 @@ async function addItem() {
     formData.append("items_cat", cat);
     formData.append("files", image);
 
+    const spinnerContainer = document.getElementById("modal-spinner");
+    spinnerContainer.classList.add("active");
+    const spinner = new Spinner({ color: '#f26b0a', lines: 12 }).spin(spinnerContainer);
+
     document.getElementById("saveItemBtn").disabled = true;
     try {
         const data = await fetchWithToken(ENDPOINTS.ADD, { method: "POST", body: formData });
@@ -279,6 +354,8 @@ async function addItem() {
         showAlert("error", "Error", `Failed to add item: ${error.message}`);
     } finally {
         document.getElementById("saveItemBtn").disabled = false;
+        spinner.stop();
+        spinnerContainer.classList.remove("active");
     }
 }
 
@@ -302,11 +379,9 @@ async function editItem() {
         return;
     }
 
-    if (image) {
-        if (image.size > MAX_FILE_SIZE) {
-            showAlert("error", "Error", "Image size exceeds 5 MB limit.");
-            return;
-        }
+    if (image && image.size > MAX_FILE_SIZE) {
+        showAlert("error", "Error", "Image size exceeds 5 MB limit.");
+        return;
     }
 
     const formData = new FormData();
@@ -324,6 +399,10 @@ async function editItem() {
     if (imageOld) formData.append("imageold", imageOld);
     if (image) formData.append("files", image);
 
+    const spinnerContainer = document.getElementById("modal-spinner");
+    spinnerContainer.classList.add("active");
+    const spinner = new Spinner({ color: '#f26b0a', lines: 12 }).spin(spinnerContainer);
+
     document.getElementById("saveItemBtn").disabled = true;
     try {
         const data = await fetchWithToken(ENDPOINTS.EDIT, { method: "POST", body: formData });
@@ -338,6 +417,8 @@ async function editItem() {
         showAlert("error", "Error", `Failed to update item: ${error.message}`);
     } finally {
         document.getElementById("saveItemBtn").disabled = false;
+        spinner.stop();
+        spinnerContainer.classList.remove("active");
     }
 }
 
@@ -348,7 +429,8 @@ async function deleteItem(id, imageName) {
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Yes, delete it!',
-        cancelButtonText: 'Cancel'
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#f26b0a'
     });
 
     if (!result.isConfirmed) return;
@@ -374,17 +456,6 @@ document.addEventListener("DOMContentLoaded", () => {
     loadItems();
 
     const searchInput = document.getElementById("global-search-input");
-    const clearSearchBtn = document.getElementById("clear-search");
-
-    searchInput.addEventListener("input", () => {
-        clearSearchBtn.style.display = searchInput.value ? "block" : "none";
-        searchItems();
-    });
-
-    searchInput.addEventListener("blur", () => {
-        if (!searchInput.value) {
-            clearSearchBtn.style.display = "none";
-            renderItems(originalItemsData);
-        }
-    });
+    searchInput.addEventListener("input", searchItems);
+    searchInput.addEventListener("blur", clearSearch);
 });

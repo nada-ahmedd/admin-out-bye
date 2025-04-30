@@ -1,24 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
-    <link rel="icon" href="images/outbye.png" type="image/x-icon">
+    <link rel="icon" href="images/outbye.png?v=1" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/spin.js/2.3.2/spin.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
+        :root {
+            --primary: #f26b0a;
+            --secondary: #ff5e62;
+            --dark: #1e2a44;
+            --light: #f7fafc;
+            --text: #333;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             min-height: 100vh;
             margin: 0;
-            padding: 0;
-            color: #333;
+            color: var(--text);
             overflow-x: hidden;
         }
 
@@ -28,70 +36,72 @@
             left: 0;
             height: 100%;
             width: 260px;
-            background: #1e2a44;
+            background: var(--dark);
             color: #fff;
-            padding: 30px 20px;
-            transition: all 0.3s;
+            padding: 20px;
+            transition: transform 0.3s ease;
             box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
         }
 
         .sidebar .logo {
             display: flex;
             align-items: center;
-            justify-content: center;
-            margin-bottom: 30px;
+            gap: 15px;
+            margin-bottom: 40px;
         }
 
         .sidebar .logo img {
-            width: 60px;
-            height: 60px;
-            margin-right: 10px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
+            border: 2px solid var(--primary);
         }
 
         .sidebar .logo h3 {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             font-weight: 600;
             margin: 0;
         }
 
         .sidebar .nav-link {
             color: #d1d5db;
-            padding: 12px 20px;
-            font-size: 1.1rem;
+            padding: 12px 15px;
+            font-size: 1rem;
             display: flex;
             align-items: center;
+            gap: 10px;
             border-radius: 8px;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
         }
 
         .sidebar .nav-link:hover {
-            background: #f26b0a;
+            background: var(--primary);
             color: #fff;
             transform: translateX(5px);
         }
 
         .content {
             margin-left: 260px;
-            padding: 30px;
+            padding: 20px;
+            transition: margin-left 0.3s ease;
         }
 
         .header {
             background: #fff;
-            padding: 20px 30px;
+            padding: 15px 25px;
             border-radius: 12px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
-            animation: fadeIn 1s ease-in-out;
+            margin-bottom: 25px;
         }
 
         .header h1 {
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             font-weight: 600;
-            color: #1e2a44;
+            color: var(--dark);
             margin: 0;
         }
 
@@ -99,36 +109,32 @@
             display: flex;
             align-items: center;
             position: relative;
+            gap: 10px;
+            max-width: 700px;
+            width: 100%;
         }
 
         .header .search-container input {
-            width: 300px;
-            padding: 10px 40px 10px 40px;
-            border: 2px solid #e2e8f0;
+            width: 100%;
+            padding: 10px 40px;
+            border: 1px solid var(--primary);
             border-radius: 25px;
-            font-size: 1rem;
-            background: #f8fafc;
+            font-size: 0.95rem;
+            background: var(--light);
             transition: all 0.3s ease;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
         }
 
         .header .search-container input:focus {
             outline: none;
-            border-color: #f26b0a;
-            background: #fff;
-            box-shadow: 0 0 10px rgba(242, 107, 10, 0.2);
-        }
-
-        .header .search-container input:hover {
-            border-color: #f26b0a;
-            background: #fff;
+            border-color: var(--primary);
+            box-shadow: 0 0 8px rgba(242, 107, 10, 0.2);
         }
 
         .header .search-container .search-icon {
             position: absolute;
             left: 15px;
-            color: #64748b;
-            font-size: 1.1rem;
+            color: #718096;
+            font-size: 1rem;
         }
 
         .header .search-container .clear-search {
@@ -136,173 +142,149 @@
             right: 15px;
             background: none;
             border: none;
-            color: #64748b;
-            font-size: 1.1rem;
+            color: #718096;
+            font-size: 1rem;
             cursor: pointer;
             display: none;
-            transition: color 0.3s;
-        }
-
-        .header .search-container .clear-search:hover {
-            color: #f26b0a;
         }
 
         .btn-custom {
-            background: linear-gradient(90deg, #f26b0a, #ff5e62);
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
             color: #fff;
             border: none;
             border-radius: 8px;
-            padding: 10px 20px;
+            padding: 8px 20px;
             font-weight: 500;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
         }
 
         .btn-custom:hover {
-            background: linear-gradient(90deg, #ff5e62, #f26b0a);
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
             transform: translateY(-2px);
         }
 
         .btn-notification {
-            background: linear-gradient(90deg, #17301d, #2b5c3b);
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
             color: #fff;
             border: none;
             border-radius: 8px;
-            padding: 10px 20px;
+            padding: 8px 15px;
+            font-size: 0.9rem;
             font-weight: 500;
-            margin-right: 10px;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
         .btn-notification:hover {
-            background: linear-gradient(90deg, #2b5c3b, #17301d);
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
             transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-danger {
+            background: linear-gradient(90deg, #dc3545, #ff6b6b);
             color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(90deg, #ff6b6b, #dc3545);
+            transform: translateY(-2px);
         }
 
         .overview {
-            margin-bottom: 30px;
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
-            flex-wrap: nowrap;
-            animation: fadeIn 1s ease-in-out;
-            position: relative;
+            margin-bottom: 25px;
         }
 
         .overview .card {
             background: #fff;
             border-radius: 12px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-            padding: 20px;
-            flex: 1;
-            min-width: 220px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            padding: 25px;
             text-align: center;
-            transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
+            transition: all 0.3s ease;
             cursor: pointer;
-            align-items: center;
-        }
-
-        .overview .card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 5px;
-            background: linear-gradient(90deg, #f26b0a, #ff5e62);
-            transition: height 0.3s;
-        }
-
-        .overview .card:hover::before {
-            height: 100%;
-            opacity: 0.1;
+            position: relative;
+            transform: perspective(1000px);
+            max-height: 30vh;
         }
 
         .overview .card:hover {
-            transform: translateY(-5px);
+            transform: perspective(1000px) rotateX(5deg) rotateY(5deg);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .overview .card i {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 10px;
         }
 
         .overview .card h5 {
             font-size: 1.1rem;
             font-weight: 500;
-            color: #1e2a44;
-            margin-bottom: 10px;
+            color: var(--dark);
+            margin-bottom: 12px;
         }
 
         .overview .card p {
             font-size: 1.8rem;
             font-weight: 600;
-            color: #f26b0a;
+            color: var(--primary);
             margin: 0;
         }
 
-        .overview-spinner-container {
-            display: none;
-            justify-content: center;
-            align-items: center;
-            height: 100px;
-            width: 100%;
-            position: absolute;
-            top: 0;
-            left: 0;
-            background: rgba(255, 255, 255, 0.8);
-        }
-
-        .section {
-            margin-bottom: 30px;
-            animation: fadeIn 1s ease-in-out;
+        .chart-container {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            padding: 25px;
         }
 
         .section .card {
             background: #fff;
             border-radius: 12px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
             overflow: hidden;
         }
 
         .section .card-header {
             padding: 15px 20px;
-            background: linear-gradient(90deg, #f5f7fa, #c3cfe2);
+            background: var(--light);
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
 
-        .section .card-header h5 {
-            font-size: 1.2rem;
-            font-weight: 500;
-            color: #1e2a44;
-            margin: 0;
+        .table-responsive {
+            overflow-x: auto;
         }
 
-        .section .card-header .btn-custom {
+        .table th,
+        .table td {
+            padding: 12px;
+            text-align: center;
+            vertical-align: middle;
             font-size: 0.9rem;
-            padding: 5px 15px;
-        }
-
-        .table {
-            margin: 0;
         }
 
         .table th {
-            background: #f1f5f9;
-            color: #1e2a44;
+            background: #edf2f7;
+            color: var(--dark);
             font-weight: 500;
-            padding: 15px;
-            text-align: center;
-        }
-
-        .table td {
-            padding: 15px;
-            vertical-align: middle;
-            text-align: center;
-            color: #4b5563;
-            transition: background 0.3s;
         }
 
         .table tr:hover td {
-            background: #f1f5f9;
+            background: var(--light);
         }
 
         .table img {
@@ -310,6 +292,47 @@
             height: 40px;
             object-fit: cover;
             border-radius: 5px;
+        }
+
+        .refresh-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--primary);
+            color: #fff;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .refresh-btn:hover {
+            background: var(--secondary);
+            transform: rotate(360deg);
+        }
+
+        .toggle-sidebar {
+            display: none;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1100;
+            padding: 8px 12px;
+            font-size: 1.2rem;
+            background: var(--primary);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+        }
+
+        .toggle-sidebar:hover {
+            background: var(--secondary);
         }
 
         .spinner-container {
@@ -324,29 +347,103 @@
             display: flex;
         }
 
-        .toggle-sidebar {
-            display: none;
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 1000;
-            padding: 8px 16px;
-            font-size: 1rem;
+        .view-more-container {
+            text-align: center;
+            margin-top: 20px;
         }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
+        .btn-view-more {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-view-more:hover {
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            transform: translateY(-2px);
+        }
+
+        .btn-view-more.view-less {
+            background: linear-gradient(90deg, #dc3545, #ff6b6b);
+        }
+
+        .btn-view-more.view-less:hover {
+            background: linear-gradient(90deg, #ff6b6b, #dc3545);
+        }
+
+        .btn-view-more.pulse {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
             }
 
-            to {
-                opacity: 1;
-                transform: translateY(0);
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
             }
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 250px;
+                transform: translateX(-250px);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .content {
+                margin-left: 0;
+            }
+
+            .toggle-sidebar {
+                display: block;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .header .search-container {
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .overview {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-container {
+                max-width: 100%;
+            }
+
+            .table {
+                font-size: 0.8rem;
+            }
+
+            .btn-custom,
+            .btn-notification,
+            .btn-danger,
+            .btn-view-more {
+                padding: 6px 12px;
+                font-size: 0.85rem;
+            }
+        }
+
+        @media (max-width: 390px) {
             .sidebar {
                 width: 220px;
                 transform: translateX(-220px);
@@ -356,73 +453,73 @@
                 transform: translateX(0);
             }
 
-            .content {
-                margin-left: 0;
-                padding: 20px;
-            }
-
-            .toggle-sidebar {
-                display: block;
-            }
-
-            .overview {
-                flex-direction: column;
-            }
-
-            .overview .card {
-                min-width: 100%;
-            }
-
-            .header .search-container {
-                width: 100%;
-                margin-bottom: 10px;
+            .header h1 {
+                font-size: 1.4rem;
             }
 
             .header .search-container input {
-                width: 100%;
+                font-size: 0.85rem;
+                padding: 8px 35px;
             }
-        }
-                .btn-danger {
-            background: linear-gradient(90deg, #dc3545, #ff6b6b);
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            padding: 10px 20px;
-            font-weight: 500;
-            transition: all 0.3s;
-        }
 
-        .btn-danger:hover {
-            background: linear-gradient(90deg, #ff6b6b, #dc3545);
-            transform: translateY(-2px);
+            .overview .card h5 {
+                font-size: 0.9rem;
+            }
+
+            .overview .card p {
+                font-size: 1.4rem;
+            }
+
+            .overview .card i {
+                font-size: 1.8rem;
+            }
+
+            .section .card-header h5 {
+                font-size: 1rem;
+            }
+
+            .table th,
+            .table td {
+                padding: 8px;
+                font-size: 0.75rem;
+            }
+
+            .btn-custom,
+            .btn-notification,
+            .btn-danger,
+            .btn-view-more {
+                padding: 5px 10px;
+                font-size: 0.8rem;
+            }
         }
     </style>
 </head>
 
 <body>
-    <button class="btn btn-custom toggle-sidebar" onclick="toggleSidebar()">
-        Menu
+    <button class="btn toggle-sidebar" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
     </button>
     <div class="sidebar" id="sidebar">
         <div class="logo">
-            <img src="images/out bye.png" alt="Logo">
+            <img src="images/outbye.png" alt="Logo">
             <h3>Admin Dashboard</h3>
         </div>
         <nav class="nav flex-column">
-            <a class="nav-link" href="index.html">Dashboard</a>
-            <a class="nav-link" href="categories.html">Categories</a>
-            <a class="nav-link" href="services.html">Services</a>
-            <a class="nav-link" href="items.html">Items</a>
-            <a class="nav-link" href="pending-orders.html">Pending Orders</a>
-            <a class="nav-link" href="archive-orders.html">Archive Orders</a>
-            <a class="nav-link" href="users.html">Users</a>
-            <a class="nav-link" href="offers.html">Offers</a>
-            <a class="nav-link" href="#" onclick="logout()">Logout</a>
+            <a class="nav-link" href="index.html"><i class="fas fa-home"></i> Dashboard</a>
+            <a class="nav-link" href="categories.html"><i class="fas fa-list"></i> Categories</a>
+            <a class="nav-link" href="services.html"><i class="fas fa-cogs"></i> Services</a>
+            <a class="nav-link" href="items.html"><i class="fas fa-box"></i> Items</a>
+            <a class="nav-link" href="pending-orders.html"><i class="fas fa-clock"></i> Pending Orders</a>
+            <a class="nav-link" href="archive-orders.html"><i class="fas fa-archive"></i> Archive Orders</a>
+            <a class="nav-link" href="users.html"><i class="fas fa-users"></i> Users</a>
+            <a class="nav-link" href="offers.html"><i class="fas fa-tags"></i> Offers</a>
+            <a class="nav-link" href="feedback.html"><i class="fas fa-star"></i> Feedback</a>
+            <a class="nav-link" href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
         </nav>
     </div>
     <div class="content">
         <div class="container-fluid">
-            <div class="header">
+            <div class="header" data-aos="fade-down">
                 <h1>Admin Dashboard</h1>
                 <div class="search-container">
                     <i class="fas fa-search search-icon"></i>
@@ -431,129 +528,166 @@
                         <i class="fas fa-times"></i>
                     </button>
                     <button class="btn btn-notification" onclick="sendNotification()">
-                        Send Notification
+                        <i class="fas fa-bell"></i> Send Notification
                     </button>
-                    <button class="btn btn-custom" onclick="logout()">
-                        Logout
-                    </button>
+                    <button class="btn btn-custom" onclick="logout()">Logout</button>
                 </div>
             </div>
-            <div class="overview" id="overview">
+            <div class="overview" data-aos="fade-up">
                 <div class="overview-spinner-container" id="overview-spinner">
                     <div class="spinner"></div>
                 </div>
                 <div class="card" onclick="window.location.href='categories.html'">
+                    <i class="fas fa-list"></i>
                     <h5>Total Categories</h5>
                     <p id="categories-count">0</p>
                 </div>
                 <div class="card" onclick="window.location.href='services.html'">
+                    <i class="fas fa-cogs"></i>
                     <h5>Total Services</h5>
                     <p id="services-count">0</p>
                 </div>
                 <div class="card" onclick="window.location.href='items.html'">
+                    <i class="fas fa-box"></i>
                     <h5>Total Items</h5>
                     <p id="items-count">0</p>
                 </div>
-                <div class="card" onclick="window.location.href='users.html'">
-                    <h5>Total Users</h5>
-                    <p id="users-count">0</p>
+                <div class="card chart-container">
+                    <h5>Orders Statistics</h5>
+                    <canvas id="ordersChart"></canvas>
                 </div>
             </div>
-            <div class="section">
+            <div class="section" data-aos="fade-up" data-aos-delay="100">
                 <div class="card">
                     <div class="card-header">
                         <h5>Recent Updates</h5>
                         <a href="categories.html" class="btn btn-custom">View All</a>
                     </div>
-                    <div id="table-spinner" class="spinner-container"></div>
+                    <div id="table-spinner" class="spinner-container">
+                        <div class="spinner"></div>
+                    </div>
                     <div class="card-body">
-                        <table class="table table-hover table-striped mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Type</th>
-                                    <th>Name</th>
-                                    <th>Image</th>
-                                    <th>Date</th>
-                                </tr>
-                            </thead>
-                            <tbody id="recent-updates-table"></tbody>
-                        </table>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-striped mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Name</th>
+                                        <th>Image</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recent-updates-table"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="section">
+            <div class="section" data-aos="fade-up" data-aos-delay="200">
                 <div class="card">
                     <div class="card-header">
                         <h5>Recent Users</h5>
                         <a href="users.html" class="btn btn-custom">View All</a>
                     </div>
-                    <div id="users-spinner" class="spinner-container"></div>
+                    <div id="users-spinner" class="spinner-container">
+                        <div class="spinner"></div>
+                    </div>
                     <div class="card-body">
-                        <table class="table table-hover table-striped mb-0">
-                            <thead>
-                                <tr>
-                                    <th>User ID</th>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Phone</th>
-                                    <th>Created At</th>
-                                </tr>
-                            </thead>
-                            <tbody id="users-table"></tbody>
-                        </table>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-striped mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>User ID</th>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Phone</th>
+                                        <th>Created At</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-table"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="section">
+            <div class="section" data-aos="fade-up" data-aos-delay="300">
                 <div class="card">
                     <div class="card-header">
                         <h5>Pending Orders</h5>
                         <a href="pending-orders.html" class="btn btn-custom">View All</a>
                     </div>
-                    <div id="orders-spinner" class="spinner-container"></div>
+                    <div id="orders-spinner" class="spinner-container">
+                        <div class="spinner"></div>
+                    </div>
                     <div class="card-body">
-                        <table class="table table-hover table-striped mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Order ID</th>
-                                    <th>User ID</th>
-                                    <th>Total Price</th>
-                                    <th>Date</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="orders-table"></tbody>
-                        </table>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-striped mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>User ID</th>
+                                        <th>Total Price</th>
+                                        <th>Date</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="orders-table"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="view-more-container" id="orders-view-more" style="display: none;">
+                        <button id="orders-toggle-btn" class="btn btn-view-more" onclick="toggleOrdersView()">
+                            <span>View More</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
                     </div>
                 </div>
             </div>
-            <div class="section">
+            <div class="section" data-aos="fade-up" data-aos-delay="400">
                 <div class="card">
                     <div class="card-header">
                         <h5>Archived Orders</h5>
                         <a href="archive-orders.html" class="btn btn-custom">View All</a>
                     </div>
-                    <div id="archive-spinner" class="spinner-container"></div>
+                    <div id="archive-spinner" class="spinner-container">
+                        <div class="spinner"></div>
+                    </div>
                     <div class="card-body">
-                        <table class="table table-hover table-striped mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Order ID</th>
-                                    <th>User ID</th>
-                                    <th>Total Price</th>
-                                    <th>Date</th>
-                                    <th>Status</th> <!-- Added Status column -->
-                                </tr>
-                            </thead>
-                            <tbody id="archive-table"></tbody>
-                        </table>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-striped mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>User ID</th>
+                                        <th>Total Price</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="archive-table"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="view-more-container" id="archive-view-more" style="display: none;">
+                        <button id="archive-toggle-btn" class="btn btn-view-more" onclick="toggleArchiveView()">
+                            <span>View More</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
+        <div class="refresh-btn" onclick="loadDashboard('')">
+            <i class="fas fa-sync-alt"></i>
+        </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/spin.js/2.3.2/spin.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script src="js/script.js"></script>
+    <script>
+        AOS.init({ duration: 800, once: true });
+    </script>
 </body>
 
 </html>

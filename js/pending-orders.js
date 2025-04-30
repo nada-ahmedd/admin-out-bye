@@ -8,9 +8,7 @@ const ENDPOINTS = {
 let originalOrdersData = [];
 
 function isLoggedIn() {
-    const isLoggedIn = localStorage.getItem('isAdminLoggedIn') === 'true' && localStorage.getItem('adminToken');
-    console.log("Are you logged in?", isLoggedIn, "Token:", localStorage.getItem('adminToken'));
-    return isLoggedIn;
+    return localStorage.getItem('isAdminLoggedIn') === 'true' && localStorage.getItem('adminToken');
 }
 
 function logout() {
@@ -26,180 +24,202 @@ function toggleSidebar() {
 
 async function fetchWithToken(url, options = {}) {
     if (!isLoggedIn()) {
-        showAlert("error", "Unauthorized", "Please log in to continue");
-        window.location.href = 'login.html';
-        throw new Error("聲No token found");
+        showAlert("error", "Unauthorized", "Please log in to continue.", () => {
+            window.location.href = 'login.html';
+        });
+        throw new Error("No token found");
     }
+
     const token = localStorage.getItem('adminToken');
     options.headers = {
         ...options.headers,
         'Authorization': `Bearer ${token}`
     };
-    console.log("Requesting:", url, "Options:", options);
+
+    if (!(options.body instanceof FormData)) {
+        options.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+        if (typeof options.body === 'object') {
+            options.body = new URLSearchParams(options.body).toString();
+        }
+    }
+
     try {
+        console.log(`Fetching ${url} with method ${options.method || 'GET'}`);
         const response = await fetch(url, options);
-        const text = await response.text();
-        console.log("Raw response from:", url, "Response:", text, "Status:", response.status);
+        console.log(`Response status: ${response.status}`);
         if (!response.ok) {
             if (response.status === 401) {
-                showAlert("error", "Session Expired", "Please log in again");
-                logout();
+                showAlert("error", "Session Expired", "Please log in again.", () => {
+                    logout();
+                });
                 throw new Error("Unauthorized");
             }
-            throw new Error(`HTTP error! Status: ${response.status}, Response: ${text}`);
+            throw new Error(`HTTP error! Status: ${response.status}`);
         }
-        return { status: response.status, text };
+        const text = await response.text();
+        console.log(`Raw response: ${text}`);
+
+        let data;
+        try {
+            const jsonMatch = text.match(/{.*}/s);
+            if (jsonMatch) {
+                data = JSON.parse(jsonMatch[0]);
+            } else {
+                throw new Error("No JSON found in response");
+            }
+        } catch (e) {
+            console.error("JSON Parse Error:", e, "Raw:", text);
+            if (text.includes('"status":"success"')) {
+                return { status: "success", message: "Operation completed successfully (parsed from raw response)" };
+            }
+            throw new Error("Invalid JSON response");
+        }
+        return data;
     } catch (error) {
-        console.error("Request error at:", url, "Error:", error);
+        console.error(`Fetch Error for ${url}:`, error);
         throw error;
     }
 }
 
-function showAlert(icon, title, text) {
+function showAlert(icon, title, text, callback) {
     Swal.fire({
         icon,
         title,
         text,
-        confirmButtonText: 'OK'
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#f26b0a'
+    }).then(() => {
+        if (callback) callback();
     });
 }
 
 async function approveOrder(orderId, userId) {
-    console.log("Approving order:", { ordersid: orderId, usersid: userId });
-    try {
-        const formData = new FormData();
-        formData.append('ordersid', orderId);
-        formData.append('usersid', userId);
-        console.log("Request body (form-data):", formData);
+    const formData = new FormData();
+    formData.append('ordersid', orderId);
+    formData.append('usersid', userId);
 
-        const result = await fetchWithToken(ENDPOINTS.APPROVE, {
-            method: "POST",
-            body: formData
-        });
-        console.log("After approval - Status:", result.status, "Response:", result.text);
-        let responseData = { status: "error" };
-        try {
-            responseData = JSON.parse(result.text);
-        } catch (e) {
-            console.error("Error parsing approval response:", e);
-        }
-        if (result.status === 200 && responseData.status === "success") {
-            showAlert("success", "Approved", "Order approved successfully");
+    try {
+        const data = await fetchWithToken(ENDPOINTS.APPROVE, { method: "POST", body: formData });
+        if (data.status === "success") {
+            showAlert("success", "Approved", data.message || "Order approved successfully.");
             await loadOrders();
         } else {
-            showAlert("error", "Error", `Failed to approve order: ${result.text}`);
+            showAlert("error", "Error", data.message || "Failed to approve order.");
         }
     } catch (error) {
-        console.error("Approval error:", error);
-        showAlert("error", "Error", "Failed to approve order: " + error.message);
+        showAlert("error", "Error", `Failed to approve order: ${error.message}`);
     }
 }
 
 async function rejectOrder(orderId, userId) {
+    const formData = new FormData();
+    formData.append('ordersid', orderId);
+    formData.append('usersid', userId);
+
     try {
-        const formData = new FormData();
-        formData.append('ordersid', orderId);
-        formData.append('usersid', userId);
-
-        const result = await fetchWithToken(ENDPOINTS.REJECT, {
-            method: "POST",
-            body: formData
-        });
-
-        let responseData = JSON.parse(result.text);
-        if (result.status === 200 && responseData.status === "success") {
-            showAlert("success", "Rejected", "Order rejected successfully");
+        const data = await fetchWithToken(ENDPOINTS.REJECT, { method: "POST", body: formData });
+        if (data.status === "success") {
+            showAlert("success", "Rejected", data.message || "Order rejected successfully.");
             await loadOrders();
         } else {
-            showAlert("error", "Error", "Failed to reject order");
+            showAlert("error", "Error", data.message || "Failed to reject order.");
         }
     } catch (error) {
-        showAlert("error", "Error", "Failed to reject order: " + error.message);
+        showAlert("error", "Error", `Failed to reject order: ${error.message}`);
     }
 }
 
 async function loadOrders() {
     if (!isLoggedIn()) {
-        showAlert("error", "Unauthorized", "Please log in to continue");
-        window.location.href = 'login.html';
+        showAlert("error", "Unauthorized", "Please log in to continue.", () => {
+            window.location.href = 'login.html';
+        });
         return;
     }
-    const ordersSpinnerContainer = document.getElementById("orders-spinner");
-    ordersSpinnerContainer.classList.add("spinner-active");
-    ordersSpinnerContainer.innerHTML = '<div class="spinner"></div>';
-    const ordersSpinner = new Spinner({ color: '#f26b0a', lines: 12 }).spin(ordersSpinnerContainer.querySelector('.spinner'));
+
+    const spinnerContainer = document.getElementById("orders-spinner");
+    spinnerContainer.classList.add("spinner-active");
+    const spinner = new Spinner({ color: '#f26b0a', lines: 12 }).spin(spinnerContainer);
 
     try {
-        let ordersData = { status: 0, text: "" };
-        try {
-            ordersData = await fetchWithToken(ENDPOINTS.ORDERS, { method: "GET" });
-            console.log("Pending orders status:", ordersData.status);
-        } catch (e) {
-            console.error("Error fetching pending orders:", e);
+        const data = await fetchWithToken(ENDPOINTS.ORDERS, { method: "GET" });
+        if (data.status === "success") {
+            originalOrdersData = data.data.filter(order => order.orders_status == 0);
+            renderOrders(originalOrdersData);
+        } else {
+            showAlert("error", "Error", data.message || "Failed to load orders.");
         }
-        let orders = [];
-        if (ordersData.status === 200) {
-            try {
-                orders = JSON.parse(ordersData.text).data || [];
-                console.log("Pending orders data:", orders);
-            } catch (e) {
-                console.error("Error parsing pending orders data:", e);
-            }
-        }
-        // Filter orders with status 0 (pending) only
-        originalOrdersData = orders.filter(order => order.orders_status == 0);
-        console.log("Filtered pending orders (status 0):", originalOrdersData);
-        renderOrders(originalOrdersData);
-
-        ordersSpinner.stop();
-        ordersSpinnerContainer.classList.remove("spinner-active");
-        ordersSpinnerContainer.innerHTML = '';
     } catch (error) {
-        ordersSpinner.stop();
-        ordersSpinnerContainer.classList.remove("spinner-active");
-        ordersSpinnerContainer.innerHTML = '';
-        showAlert("error", "Error", "Failed to load orders: " + error.message);
+        showAlert("error", "Error", `Failed to load orders: ${error.message}`);
+    } finally {
+        spinner.stop();
+        spinnerContainer.classList.remove("spinner-active");
     }
 }
 
 function renderOrders(orders) {
-    const ordersTable = document.getElementById("orders-table");
-    // Check if ordersTable exists
-    if (!ordersTable) {
-        console.error("Error: orders-table element not found in the DOM");
+    const ordersGrid = document.getElementById("orders-grid");
+    if (!ordersGrid) {
+        console.error("Error: orders-grid element not found in the DOM");
         return;
     }
-    console.log("Rendering orders:", orders);
-    ordersTable.innerHTML = "";
-    // Double-check to ensure only status 0 orders are rendered
+    ordersGrid.innerHTML = "";
+
     const pendingOrders = orders.filter(order => order.orders_status == 0);
     if (pendingOrders.length > 0) {
         pendingOrders.forEach(order => {
-            const address = order.address_name ? `${order.address_name}, ${order.address_street}, ${order.address_city}` : "No address";
-            console.log("Rendering order:", order.orders_id, "status:", order.orders_status);
-            ordersTable.innerHTML += `
-                <tr>
-                    <td>${order.orders_id}</td>
-                    <td>${order.orders_usersid}</td>
-                    <td>${address}</td>
-                    <td>${order.orders_type == 0 ? "Delivery" : "Pickup"}</td>
-                    <td>${order.orders_price || 0}</td>
-                    <td>${order.orders_pricedelivery || 0}</td>
-                    <td>${order.orders_totalprice || 0}</td>
-                    <td>${order.orders_coupon == 1 ? "Yes" : "No"}</td>
-                    <td>${order.orders_paymentmethod == 0 ? "Cash" : "Other"}</td>
-                    <td>${order.orders_datetime}</td>
-                    <td>
-                        <button class="btn btn-sm btn-custom" onclick="approveOrder(${order.orders_id}, ${order.orders_usersid})">Approve</button>
-                        <button class="btn btn-sm btn-danger" onclick="rejectOrder(${order.orders_id}, ${order.orders_usersid})">Reject</button>
-                    </td>
-                </tr>
+            const orderType = order.orders_type == 0 ? "Delivery" : "Takeaway";
+            ordersGrid.innerHTML += `
+                <div class="order-card">
+                    <h5>Order #${order.orders_id}</h5>
+                    <div class="order-info">User ID: ${order.orders_usersid}</div>
+                    <div class="order-info">Type: ${orderType}</div>
+                    <div class="order-info">Total: ${order.orders_totalprice || 0}</div>
+                    <div class="order-info">Date: ${order.orders_datetime}</div>
+                    <div class="actions">
+                        <button class="btn btn-action btn-approve" onclick="approveOrder(${order.orders_id}, ${order.orders_usersid})">
+                            <i class="fas fa-check"></i> Approve
+                        </button>
+                        <button class="btn btn-action btn-reject" onclick="rejectOrder(${order.orders_id}, ${order.orders_usersid})">
+                            <i class="fas fa-times"></i> Reject
+                        </button>
+                        <button class="btn-show-more" onclick="showOrderDetails(${order.orders_id}, ${order.orders_usersid}, '${order.address_name || ''}', '${order.address_street || ''}', '${order.address_city || ''}', ${order.orders_type}, ${order.orders_price || 0}, ${order.orders_pricedelivery || 0}, ${order.orders_totalprice || 0}, ${order.orders_coupon}, ${order.orders_paymentmethod}, '${order.orders_datetime}')">
+                            <i class="fas fa-info-circle"></i> Show More
+                        </button>
+                    </div>
+                </div>
             `;
         });
     } else {
-        console.log("No pending orders to render");
-        ordersTable.innerHTML = `<tr><td colspan="11">No pending orders</td></tr>`;
+        ordersGrid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 20px;">No pending orders</div>`;
     }
+}
+
+function showOrderDetails(id, userId, addressName, addressStreet, addressCity, type, price, deliveryPrice, totalPrice, coupon, paymentMethod, datetime) {
+    const address = addressName ? `${addressName}, ${addressStreet}, ${addressCity}` : "No address";
+    const orderType = type == 0 ? "Delivery" : "Takeaway";
+    const couponStatus = coupon == 1 ? "Yes" : "No";
+    const payment = paymentMethod == 0 ? "Cash" : "Other";
+
+    Swal.fire({
+        title: `Order #${id}`,
+        html: `
+            <div style="text-align: left; font-size: 0.9rem; line-height: 1.5;">
+                <p><strong>Order ID:</strong> ${id}</p>
+                <p><strong>User ID:</strong> ${userId}</p>
+                <p><strong>Address:</strong> ${address}</p>
+                <p><strong>Type:</strong> ${orderType}</p>
+                <p><strong>Price:</strong> ${price}</p>
+                <p><strong>Delivery Price:</strong> ${deliveryPrice}</p>
+                <p><strong>Total Price:</strong> ${totalPrice}</p>
+                <p><strong>Coupon:</strong> ${couponStatus}</p>
+                <p><strong>Payment Method:</strong> ${payment}</p>
+                <p><strong>Date:</strong> ${datetime}</p>
+            </div>
+        `,
+        confirmButtonText: 'Close',
+        confirmButtonColor: '#f26b0a'
+    });
 }
 
 function clearSearch() {
@@ -211,6 +231,9 @@ function clearSearch() {
 
 function searchOrders() {
     const searchInput = document.getElementById("global-search-input").value.trim().toLowerCase();
+    const clearSearchBtn = document.getElementById("clear-search");
+    clearSearchBtn.style.display = searchInput ? "block" : "none";
+
     if (!searchInput) {
         renderOrders(originalOrdersData);
         return;
@@ -222,7 +245,7 @@ function searchOrders() {
             (order.orders_id && order.orders_id.toString().includes(searchInput)) ||
             (order.orders_usersid && order.orders_usersid.toString().includes(searchInput)) ||
             (address && address.toLowerCase().includes(searchInput)) ||
-            (order.orders_type != null && (order.orders_type == 0 ? "delivery" : "pickup").includes(searchInput))
+            (order.orders_type != null && (order.orders_type == 0 ? "delivery" : "takeaway").includes(searchInput))
         );
     });
 
@@ -233,17 +256,6 @@ document.addEventListener("DOMContentLoaded", () => {
     loadOrders();
 
     const searchInput = document.getElementById("global-search-input");
-    const clearSearchBtn = document.getElementById("clear-search");
-
-    searchInput.addEventListener("input", () => {
-        clearSearchBtn.style.display = searchInput.value ? "block" : "none";
-        searchOrders();
-    });
-
-    searchInput.addEventListener("blur", () => {
-        if (!searchInput.value) {
-            clearSearchBtn.style.display = "none";
-            renderOrders(originalOrdersData);
-        }
-    });
+    searchInput.addEventListener("input", searchOrders);
+    searchInput.addEventListener("blur", clearSearch);
 });

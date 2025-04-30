@@ -10,7 +10,11 @@ const ENDPOINTS = {
 const DEFAULT_IMAGE = 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 let originalServicesData = [];
+let filteredServicesData = [];
 let categoryId;
+let displayedServicesCount = 10;
+let isServicesExpanded = false;
+const ITEMS_PER_PAGE = 10;
 
 function isLoggedIn() {
     return localStorage.getItem('isAdminLoggedIn') === 'true' && localStorage.getItem('adminToken');
@@ -100,7 +104,8 @@ function showAlert(icon, title, text, callback) {
         icon,
         title,
         text,
-        confirmButtonText: 'OK'
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#f26b0a'
     }).then(() => {
         if (callback) callback();
     });
@@ -136,26 +141,25 @@ async function loadServices() {
         return;
     }
 
-    const spinnerContainer = document.getElementById("table-spinner");
+    const spinnerContainer = document.getElementById("services-spinner");
     spinnerContainer.classList.add("spinner-active");
-    spinnerContainer.innerHTML = '<div class="spinner"></div>';
-    const spinner = new Spinner({ color: '#f26b0a', lines: 12 }).spin(spinnerContainer.querySelector('.spinner'));
+    const spinner = new Spinner({ color: '#f26b0a', lines: 12 }).spin(spinnerContainer);
 
     try {
         const data = await fetchWithToken(ENDPOINTS.VIEW, { method: "GET" });
         spinner.stop();
         spinnerContainer.classList.remove("spinner-active");
-        spinnerContainer.innerHTML = '';
 
         if (Array.isArray(data)) {
             originalServicesData = data.filter(service => service.service_cat === categoryId);
+            filteredServicesData = [...originalServicesData];
             if (originalServicesData.length > 0) {
                 const categoryName = originalServicesData[0].categories_name;
                 document.getElementById("service-type-title").textContent = `${categoryName} Services`;
             } else {
                 document.getElementById("service-type-title").textContent = "No Services Found";
             }
-            renderServices(originalServicesData);
+            renderServices(filteredServicesData, displayedServicesCount);
         } else {
             showAlert("error", "Error", "Failed to load services: Invalid response format.");
             document.getElementById("service-type-title").textContent = "Services";
@@ -163,16 +167,23 @@ async function loadServices() {
     } catch (error) {
         spinner.stop();
         spinnerContainer.classList.remove("spinner-active");
-        spinnerContainer.innerHTML = '';
         showAlert("error", "Error", `Failed to load services: ${error.message}`);
         document.getElementById("service-type-title").textContent = "Services";
     }
 }
 
-function renderServices(services) {
-    const tableBody = document.getElementById("services-table");
-    tableBody.innerHTML = "";
-    services.forEach(service => {
+function renderServices(services, limit = displayedServicesCount) {
+    const grid = document.getElementById("services-grid");
+    grid.innerHTML = '';
+
+    if (!services || services.length === 0) {
+        grid.innerHTML = '<p class="text-center text-muted w-100">No services found.</p>';
+        document.getElementById("services-view-more").style.display = "none";
+        return;
+    }
+
+    const servicesToShow = services.slice(0, limit);
+    servicesToShow.forEach(service => {
         let imageSrc = DEFAULT_IMAGE;
         if (service.service_image && service.service_image !== "null" && service.service_image !== "") {
             imageSrc = service.service_image;
@@ -180,50 +191,86 @@ function renderServices(services) {
 
         const activeStatus = service.service_active === "1" ? "Yes" : "No";
 
-        tableBody.innerHTML += `
-            <tr>
-                <td>${service.service_id}</td>
-                <td>${service.service_name}</td>
-                <td>${service.service_name_ar}</td>
-                <td><img src="${imageSrc}" alt="Service Image" onerror="this.src='${DEFAULT_IMAGE}'"></td>
-                <td>${activeStatus}</td>
-                <td>${service.service_created}</td>
-                <td>
-                    <button class="btn btn-sm btn-info btn-action me-2" onclick="window.location.href='service_items.html?service_id=${service.service_id}'">
-                        View Items
-                    </button>
-                    <button class="btn btn-sm btn-warning btn-action me-2" data-bs-toggle="modal" data-bs-target="#serviceModal" data-service-id="${service.service_id}">
-                        Edit
-                    </button>
-                    <button class="btn btn-sm btn-danger btn-action" onclick="deleteService('${service.service_id}', '${service.service_image}')">
-                        Delete
-                    </button>
-                </td>
-            </tr>
+        const card = `
+            <div class="service-card">
+                <img src="${imageSrc}" alt="Service Image" onerror="this.src='${DEFAULT_IMAGE}'">
+                <h5>Service #${service.service_id}</h5>
+                <div class="service-info">Name: ${service.service_name}</div>
+                <div class="service-info">Name (AR): ${service.service_name_ar}</div>
+                <div class="service-info">Active: ${activeStatus}</div>
+                <div class="service-info">Created: ${service.service_created}</div>
+                <div class="actions">
+                    <button class="btn btn-action btn-view-items" data-tooltip="View service items" onclick="window.location.href='service_items.html?service_id=${service.service_id}'">View Items</button>
+                    <button class="btn btn-action btn-edit" data-tooltip="Edit service" data-bs-toggle="modal" data-bs-target="#serviceModal" data-service-id="${service.service_id}">Edit</button>
+                    <button class="btn btn-action btn-delete" data-tooltip="Delete service" onclick="deleteService('${service.service_id}', '${service.service_image}')">Delete</button>
+                </div>
+            </div>
         `;
+        grid.innerHTML += card;
     });
+
+    const viewMoreContainer = document.getElementById("services-view-more");
+    const toggleBtn = document.getElementById("services-toggle-btn");
+    const toggleBtnText = toggleBtn.querySelector('span');
+    const toggleBtnIcon = toggleBtn.querySelector('i');
+
+    if (services.length > ITEMS_PER_PAGE) {
+        viewMoreContainer.style.display = "block";
+        if (isServicesExpanded) {
+            toggleBtnText.textContent = "View Less";
+            toggleBtn.classList.add("view-less");
+            toggleBtnIcon.classList.replace("fa-chevron-down", "fa-chevron-up");
+        } else {
+            toggleBtnText.textContent = "View More";
+            toggleBtn.classList.remove("view-less");
+            toggleBtnIcon.classList.replace("fa-chevron-up", "fa-chevron-down");
+        }
+        toggleBtn.classList.add("pulse");
+        setTimeout(() => toggleBtn.classList.remove("pulse"), 500);
+    } else {
+        viewMoreContainer.style.display = "none";
+    }
+}
+
+function toggleView() {
+    isServicesExpanded = !isServicesExpanded;
+    displayedServicesCount = isServicesExpanded ? filteredServicesData.length : ITEMS_PER_PAGE;
+    renderServices(filteredServicesData, displayedServicesCount);
+    const grid = document.getElementById("services-grid");
+    grid.scrollIntoView({ behavior: "smooth", block: "end" });
 }
 
 function clearSearch() {
     const searchInput = document.getElementById("global-search-input");
     searchInput.value = "";
     document.getElementById("clear-search").style.display = "none";
-    renderServices(originalServicesData);
+    filteredServicesData = [...originalServicesData];
+    displayedServicesCount = ITEMS_PER_PAGE;
+    isServicesExpanded = false;
+    renderServices(filteredServicesData, displayedServicesCount);
 }
 
 function searchServices() {
     const searchInput = document.getElementById("global-search-input").value.trim().toLowerCase();
+    const clearSearchBtn = document.getElementById("clear-search");
+    clearSearchBtn.style.display = searchInput ? "block" : "none";
+
     if (!searchInput) {
-        renderServices(originalServicesData);
+        filteredServicesData = [...originalServicesData];
+        displayedServicesCount = ITEMS_PER_PAGE;
+        isServicesExpanded = false;
+        renderServices(filteredServicesData, displayedServicesCount);
         return;
     }
 
-    const filteredServices = originalServicesData.filter(service =>
+    filteredServicesData = originalServicesData.filter(service =>
         (service.service_name && service.service_name.toLowerCase().includes(searchInput)) ||
         (service.service_name_ar && service.service_name_ar.toLowerCase().includes(searchInput)) ||
         (service.service_id && service.service_id.toString().includes(searchInput))
     );
-    renderServices(filteredServices);
+    displayedServicesCount = ITEMS_PER_PAGE;
+    isServicesExpanded = false;
+    renderServices(filteredServicesData, displayedServicesCount);
 }
 
 function prepareAddService() {
@@ -300,6 +347,10 @@ async function addService() {
     formData.append("service_active", active);
     if (image) formData.append("files", image);
 
+    const spinnerContainer = document.getElementById("modal-spinner");
+    spinnerContainer.classList.add("active");
+    const spinner = new Spinner({ color: '#f26b0a', lines: 12 }).spin(spinnerContainer);
+
     document.getElementById("saveServiceBtn").disabled = true;
     try {
         const data = await fetchWithToken(ENDPOINTS.ADD, { method: "POST", body: formData });
@@ -314,6 +365,8 @@ async function addService() {
         showAlert("error", "Error", `Failed to add service: ${error.message}`);
     } finally {
         document.getElementById("saveServiceBtn").disabled = false;
+        spinner.stop();
+        spinnerContainer.classList.remove("active");
     }
 }
 
@@ -369,6 +422,10 @@ async function editService() {
     if (imageOld) formData.append("imageold", imageOld);
     if (image) formData.append("files", image);
 
+    const spinnerContainer = document.getElementById("modal-spinner");
+    spinnerContainer.classList.add("active");
+    const spinner = new Spinner({ color: '#f26b0a', lines: 12 }).spin(spinnerContainer);
+
     document.getElementById("saveServiceBtn").disabled = true;
     try {
         const data = await fetchWithToken(ENDPOINTS.EDIT, { method: "POST", body: formData });
@@ -383,6 +440,8 @@ async function editService() {
         showAlert("error", "Error", `Failed to update service: ${error.message}`);
     } finally {
         document.getElementById("saveServiceBtn").disabled = false;
+        spinner.stop();
+        spinnerContainer.classList.remove("active");
     }
 }
 
@@ -392,7 +451,8 @@ async function deleteService(id, imageName) {
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Yes, delete it!',
-        cancelButtonText: 'Cancel'
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#f26b0a'
     });
 
     if (!result.isConfirmed) return;
@@ -418,25 +478,13 @@ document.addEventListener("DOMContentLoaded", () => {
     loadServices();
 
     const searchInput = document.getElementById("global-search-input");
-    const clearSearchBtn = document.getElementById("clear-search");
+    searchInput.addEventListener("input", searchServices);
+    searchInput.addEventListener("blur", clearSearch);
 
-    searchInput.addEventListener("input", () => {
-        clearSearchBtn.style.display = searchInput.value ? "block" : "none";
-        searchServices();
-    });
-
-    searchInput.addEventListener("blur", () => {
-        if (!searchInput.value) {
-            clearSearchBtn.style.display = "none";
-            renderServices(originalServicesData);
-        }
-    });
-
-    // Handle Modal events for Add/Edit Service
     const serviceModal = document.getElementById("serviceModal");
     serviceModal.addEventListener('shown.bs.modal', (event) => {
-        const button = event.relatedTarget; // Button that triggered the modal
-        const serviceId = button.getAttribute('data-service-id'); // Check if it's Edit button
+        const button = event.relatedTarget;
+        const serviceId = button.getAttribute('data-service-id');
         if (serviceId) {
             const serviceData = originalServicesData.find(service => service.service_id === serviceId);
             if (serviceData) {
@@ -461,7 +509,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Reset modal when hidden
     serviceModal.addEventListener('hidden.bs.modal', () => {
         document.getElementById("serviceForm").reset();
         document.getElementById("serviceModalLabel").textContent = "Add Service";

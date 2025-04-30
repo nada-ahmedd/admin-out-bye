@@ -1,22 +1,32 @@
 const API_BASE_URL = "https://abdulrahmanantar.com/outbye/admin/";
+const SEARCH_API_URL = "https://abdulrahmanantar.com/outbye/items/search.php";
+const FEEDBACK_API_URL = "https://abdulrahmanantar.com/outbye/user_review/view.php";
+
 const ENDPOINTS = {
     CATEGORIES: `${API_BASE_URL}categories/view.php`,
     SERVICES: `${API_BASE_URL}services/view.php`,
     ITEMS: `${API_BASE_URL}items/view.php`,
     ORDERS: `${API_BASE_URL}orders/view.php`,
     ARCHIVE: `${API_BASE_URL}orders/archive.php`,
+    REJECT_ARCHIVE: `${API_BASE_URL}orders/archive_reject.php`,
     APPROVE: `${API_BASE_URL}orders/approve.php`,
     REJECT: `${API_BASE_URL}orders/reject_order.php`,
     USERS: `${API_BASE_URL}users/view.php`,
     SEND_NOTIFICATION: `${API_BASE_URL}send_notification_all.php`
 };
 
+const DEFAULT_IMAGE = 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+let originalFeedbackData = [];
+let ordersChartInstance = null;
+
+// Check if user is logged in
 function isLoggedIn() {
     const isLoggedIn = localStorage.getItem('isAdminLoggedIn') === 'true' && localStorage.getItem('adminToken');
     console.log("Are you logged in?", isLoggedIn, "Token:", localStorage.getItem('adminToken'));
     return isLoggedIn;
 }
 
+// Log out user
 function logout() {
     localStorage.removeItem('isAdminLoggedIn');
     localStorage.removeItem('adminId');
@@ -24,6 +34,7 @@ function logout() {
     window.location.href = 'login.html';
 }
 
+// Toggle sidebar visibility
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     if (sidebar) {
@@ -31,6 +42,7 @@ function toggleSidebar() {
     }
 }
 
+// Fetch data with authorization token
 async function fetchWithToken(url, options = {}) {
     if (!isLoggedIn()) {
         showAlert("error", "Unauthorized", "Please log in to continue", () => {
@@ -85,17 +97,24 @@ async function fetchWithToken(url, options = {}) {
     }
 }
 
+// Show alert using SweetAlert2
 function showAlert(icon, title, text, callback) {
     Swal.fire({
         icon,
         title,
         text,
-        confirmButtonText: 'OK'
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#f26b0a',
+        position: 'top-end',
+        toast: true,
+        showConfirmButton: false,
+        timer: 3000
     }).then(() => {
         if (callback) callback();
     });
 }
 
+// Send notification to all users
 async function sendNotification() {
     const { value: formValues } = await Swal.fire({
         title: 'Send Notification to All Users',
@@ -140,6 +159,7 @@ async function sendNotification() {
     }
 }
 
+// Approve an order
 async function approveOrder(orderId, userId) {
     console.log("Approving order:", { ordersid: orderId, usersid: userId });
     try {
@@ -166,6 +186,7 @@ async function approveOrder(orderId, userId) {
     }
 }
 
+// Reject an order
 async function rejectOrder(orderId, userId) {
     console.log("Rejecting order:", { ordersid: orderId, usersid: userId });
     try {
@@ -192,6 +213,7 @@ async function rejectOrder(orderId, userId) {
     }
 }
 
+// Load overview data
 async function loadOverview() {
     const overviewSpinnerContainer = document.getElementById("overview-spinner");
     if (!overviewSpinnerContainer) {
@@ -261,99 +283,117 @@ async function loadOverview() {
     }
 }
 
-async function searchAll(query) {
-    const lowerQuery = query.toLowerCase();
-    let allData = {
-        categories: [],
-        services: [],
-        items: [],
-        users: [],
-        orders: [],
-        archivedOrders: []
-    };
-
-    try {
-        const categoriesData = await fetchWithToken(ENDPOINTS.CATEGORIES, { method: "GET" });
-        if (categoriesData.status === "success") {
-            allData.categories = categoriesData.data.map(item => ({
-                type: "Category",
-                name: item.categories_name,
-                image: item.categories_image,
-                date: item.categories_datetime
-            })).filter(item => item.name.toLowerCase().includes(lowerQuery));
-        }
-    } catch (e) {
-        console.error("Categories Search Error:", e);
+// Load orders chart
+async function loadOrdersChart() {
+    const canvas = document.getElementById('ordersChart');
+    const ctx = canvas?.getContext('2d');
+    if (!ctx) {
+        console.error("Orders chart canvas not found");
+        return;
     }
 
-    try {
-        const servicesData = await fetchWithToken(ENDPOINTS.SERVICES, { method: "GET" });
-        if (Array.isArray(servicesData)) {
-            allData.services = servicesData.map(item => ({
-                type: "Service",
-                name: item.service_name || "Unknown",
-                image: item.service_image || "",
-                date: item.service_datetime || item.service_created || ""
-            })).filter(item => item.name.toLowerCase().includes(lowerQuery));
-        }
-    } catch (e) {
-        console.error("Services Search Error:", e);
+    const existingChart = Chart.getChart('ordersChart');
+    if (existingChart) {
+        existingChart.destroy();
     }
 
-    try {
-        const itemsData = await fetchWithToken(ENDPOINTS.ITEMS, { method: "GET" });
-        if (itemsData.status === "success") {
-            allData.items = itemsData.data.map(item => ({
-                type: "Item",
-                name: item.items_name || "Unknown",
-                image: item.items_image || "",
-                date: item.items_date || ""
-            })).filter(item => item.name.toLowerCase().includes(lowerQuery));
-        }
-    } catch (e) {
-        console.error("Items Search Error:", e);
+    if (ordersChartInstance) {
+        ordersChartInstance.destroy();
+        ordersChartInstance = null;
     }
 
-    try {
-        const usersData = await fetchWithToken(ENDPOINTS.USERS, { method: "GET" });
-        if (usersData.status === "success") {
-            allData.users = usersData.data.filter(user =>
-                user.users_name.toLowerCase().includes(lowerQuery) ||
-                user.users_email.toLowerCase().includes(lowerQuery) ||
-                user.users_phone.includes(lowerQuery)
-            );
-        }
-    } catch (e) {
-        console.error("Users Search Error:", e);
-    }
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     try {
         const ordersData = await fetchWithToken(ENDPOINTS.ORDERS, { method: "GET" });
-        if (ordersData.status === "success") {
-            allData.orders = ordersData.data.filter(order =>
-                order.orders_id.toString().includes(lowerQuery) ||
-                order.orders_usersid.toString().includes(lowerQuery)
-            );
-        }
-    } catch (e) {
-        console.error("Orders Search Error:", e);
-    }
-
-    try {
         const archiveData = await fetchWithToken(ENDPOINTS.ARCHIVE, { method: "GET" });
-        if (archiveData.status === "success") {
-            allData.archivedOrders = archiveData.data.filter(order =>
-                order.orders_id.toString().includes(lowerQuery) ||
-                order.orders_usersid.toString().includes(lowerQuery)
-            );
-        }
-    } catch (e) {
-        console.error("Archived Orders Search Error:", e);
-    }
+        const rejectArchiveData = await fetchWithToken(ENDPOINTS.REJECT_ARCHIVE, { method: "GET" });
 
-    return allData;
+        let pendingCount = 0, approvedCount = 0, rejectedCount = 0;
+
+        // Count pending orders from ORDERS endpoint
+        if (ordersData.status === "success" && Array.isArray(ordersData.data)) {
+            pendingCount = ordersData.data.filter(order => order.orders_status == 0).length;
+        }
+
+        // Count approved orders from ARCHIVE endpoint
+        if (archiveData.status === "success" && Array.isArray(archiveData.data)) {
+            approvedCount = archiveData.data.length; // Assuming all orders in ARCHIVE are approved
+        }
+
+        // Count rejected orders from REJECT_ARCHIVE endpoint
+        if (rejectArchiveData.status === "success" && Array.isArray(rejectArchiveData.data)) {
+            rejectedCount = rejectArchiveData.data.length; // Assuming all orders in REJECT_ARCHIVE are rejected
+        }
+
+        ordersChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Pending', 'Approved', 'Rejected'],
+                datasets: [{
+                    data: [pendingCount, approvedCount, rejectedCount],
+                    backgroundColor: ['#f26b0a', '#2b5c3b', '#dc3545'],
+                    borderColor: '#fff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            font: {
+                                size: 12,
+                                family: 'Inter'
+                            }
+                        }
+                    },
+                    tooltip: {
+                        enabled: true
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error("Orders Chart Error:", error);
+        showAlert("error", "Error", "Failed to load orders chart: " + error.message);
+    }
 }
 
+// Search across all entities
+async function searchAll(query) {
+    try {
+        const formData = new FormData();
+        formData.append('search', query);
+        const response = await fetchWithToken(SEARCH_API_URL, {
+            method: "POST",
+            body: formData
+        });
+
+        return {
+            categories: Array.isArray(response.categories) ? response.categories : [],
+            services: Array.isArray(response.services) ? response.services : [],
+            items: Array.isArray(response.items) ? response.items : [],
+            users: Array.isArray(response.users) ? response.users : [],
+            orders: Array.isArray(response.orders) ? response.orders : [],
+            archivedOrders: Array.isArray(response.archivedOrders) ? response.archivedOrders : []
+        };
+    } catch (error) {
+        console.error("Search Error:", error);
+        showAlert("error", "Error", "Failed to search: " + error.message);
+        return {
+            categories: [],
+            services: [],
+            items: [],
+            users: [],
+            orders: [],
+            archivedOrders: []
+        };
+    }
+}
+
+// Load recent updates
 async function loadRecentUpdates(searchData = null) {
     const tableSpinnerContainer = document.getElementById("table-spinner");
     if (!tableSpinnerContainer) {
@@ -369,18 +409,28 @@ async function loadRecentUpdates(searchData = null) {
         const defaultDate = new Date().toISOString();
 
         if (searchData) {
+            const categories = Array.isArray(searchData.categories) ? searchData.categories : [];
+            const services = Array.isArray(searchData.services) ? searchData.services : [];
+            const items = Array.isArray(searchData.items) ? searchData.items : [];
+
             recentUpdates = [
-                ...searchData.categories.map(item => ({
-                    ...item,
-                    date: item.date && !isNaN(new Date(item.date)) ? item.date : defaultDate
+                ...categories.map(item => ({
+                    type: "Category",
+                    name: item.categories_name || "Unknown",
+                    image: item.categories_image || "",
+                    date: item.categories_datetime || defaultDate
                 })),
-                ...searchData.services.map(item => ({
-                    ...item,
-                    date: item.date && !isNaN(new Date(item.date)) ? item.date : defaultDate
+                ...services.map(item => ({
+                    type: "Service",
+                    name: item.service_name || "Unknown",
+                    image: item.service_image || "",
+                    date: item.service_datetime || item.service_created || defaultDate
                 })),
-                ...searchData.items.map(item => ({
-                    ...item,
-                    date: item.date && !isNaN(new Date(item.date)) ? item.date : defaultDate
+                ...items.map(item => ({
+                    type: "Item",
+                    name: item.items_name || "Unknown",
+                    image: item.items_image || "",
+                    date: item.items_date || defaultDate
                 }))
             ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 4);
         } else {
@@ -464,6 +514,7 @@ async function loadRecentUpdates(searchData = null) {
     }
 }
 
+// Load recent users
 async function loadRecentUsers(searchData = null) {
     const usersSpinnerContainer = document.getElementById("users-spinner");
     if (!usersSpinnerContainer) {
@@ -477,7 +528,7 @@ async function loadRecentUsers(searchData = null) {
     try {
         let recentUsers = [];
         if (searchData) {
-            recentUsers = searchData.users.slice(0, 5);
+            recentUsers = Array.isArray(searchData.users) ? searchData.users.slice(0, 5) : [];
         } else {
             try {
                 const usersData = await fetchWithToken(ENDPOINTS.USERS, { method: "GET" });
@@ -520,6 +571,7 @@ async function loadRecentUsers(searchData = null) {
     }
 }
 
+// Load pending orders
 async function loadPendingOrders(searchData = null) {
     const ordersSpinnerContainer = document.getElementById("orders-spinner");
     if (!ordersSpinnerContainer) {
@@ -533,7 +585,7 @@ async function loadPendingOrders(searchData = null) {
     try {
         let ordersData = [];
         if (searchData) {
-            ordersData = searchData.orders.filter(order => order.orders_status == 0).slice(0, 5);
+            ordersData = Array.isArray(searchData.orders) ? searchData.orders.filter(order => order.orders_status == 0).slice(0, 5) : [];
         } else {
             try {
                 const response = await fetchWithToken(ENDPOINTS.ORDERS, { method: "GET" });
@@ -579,6 +631,7 @@ async function loadPendingOrders(searchData = null) {
     }
 }
 
+// Load archived orders
 async function loadArchivedOrders(searchData = null) {
     const archiveSpinnerContainer = document.getElementById("archive-spinner");
     if (!archiveSpinnerContainer) {
@@ -591,18 +644,35 @@ async function loadArchivedOrders(searchData = null) {
 
     try {
         let archiveData = [];
+        let rejectArchiveData = [];
+
         if (searchData) {
-            archiveData = searchData.archivedOrders.slice(0, 5);
+            archiveData = Array.isArray(searchData.archivedOrders) ? searchData.archivedOrders.filter(order => order.orders_status == 2).slice(0, 5) : [];
+            rejectArchiveData = Array.isArray(searchData.archivedOrders) ? searchData.archivedOrders.filter(order => order.orders_status == 1).slice(0, 5) : [];
         } else {
             try {
-                const response = await fetchWithToken(ENDPOINTS.ARCHIVE, { method: "GET" });
-                if (response.status === "success") {
-                    archiveData = response.data.slice(0, 5);
+                const archiveResponse = await fetchWithToken(ENDPOINTS.ARCHIVE, { method: "GET" });
+                if (archiveResponse.status === "success") {
+                    archiveData = archiveResponse.data.map(order => ({ ...order, orders_status: 2 })); // Mark as approved
                 }
             } catch (e) {
                 console.error("Archive Error:", e);
             }
+
+            try {
+                const rejectResponse = await fetchWithToken(ENDPOINTS.REJECT_ARCHIVE, { method: "GET" });
+                if (rejectResponse.status === "success") {
+                    rejectArchiveData = rejectResponse.data.map(order => ({ ...order, orders_status: 1 })); // Mark as rejected
+                }
+            } catch (e) {
+                console.error("Reject Archive Error:", e);
+            }
         }
+
+        // Combine and sort archived orders (approved and rejected)
+        const combinedArchiveData = [...archiveData, ...rejectArchiveData]
+            .sort((a, b) => new Date(b.orders_datetime) - new Date(a.orders_datetime))
+            .slice(0, 5);
 
         const archiveTable = document.getElementById("archive-table");
         if (!archiveTable) {
@@ -611,8 +681,8 @@ async function loadArchivedOrders(searchData = null) {
         }
 
         archiveTable.innerHTML = "";
-        if (archiveData.length > 0) {
-            archiveData.forEach(order => {
+        if (combinedArchiveData.length > 0) {
+            combinedArchiveData.forEach(order => {
                 const statusText = order.orders_status == 1 ? "Rejected" : order.orders_status == 2 ? "Approved" : "Unknown";
                 archiveTable.innerHTML += `
                     <tr>
@@ -636,6 +706,109 @@ async function loadArchivedOrders(searchData = null) {
     }
 }
 
+// Render feedback data as cards
+function renderFeedback(feedback) {
+    const feedbackGrid = document.getElementById("feedback-table");
+    if (!feedbackGrid) {
+        console.error("Feedback grid not found");
+        return;
+    }
+
+    feedbackGrid.innerHTML = "";
+    if (!feedback || feedback.length === 0) {
+        feedbackGrid.innerHTML = '<p class="text-center text-muted w-100">No feedback found.</p>';
+        return;
+    }
+
+    feedback.forEach(item => {
+        const image = item.users_image || DEFAULT_IMAGE;
+        const stars = Array(5).fill('<i class="fas fa-star text-warning"></i>').map((star, index) => {
+            return index < item.rating ? star : '<i class="far fa-star text-warning"></i>';
+        }).join("");
+        const card = `
+            <div class="feedback-card">
+                <img src="${image}" alt="${item.users_name}" loading="lazy" onerror="this.src='${DEFAULT_IMAGE}'">
+                <h5>Feedback #${item.id}</h5>
+                <div class="feedback-info">User: ${item.users_name}</div>
+                <div class="feedback-info">Rating: ${stars}</div>
+                <div class="feedback-info">Service: ${item.service_type}</div>
+            </div>
+        `;
+        feedbackGrid.innerHTML += card;
+    });
+}
+
+// Clear search input
+function clearSearch() {
+    const searchInput = document.getElementById("global-search-input");
+    const clearSearchBtn = document.getElementById("clear-search");
+    if (searchInput && clearSearchBtn) {
+        searchInput.value = "";
+        clearSearchBtn.style.display = "none";
+        renderFeedback(originalFeedbackData);
+    }
+}
+
+// Search feedback data
+function searchFeedback() {
+    const searchInput = document.getElementById("global-search-input");
+    if (!searchInput) {
+        console.error("Search input not found");
+        return;
+    }
+
+    const searchValue = searchInput.value.trim().toLowerCase();
+    const clearSearchBtn = document.getElementById("clear-search");
+    clearSearchBtn.style.display = searchValue ? "block" : "none";
+
+    if (!searchValue) {
+        renderFeedback(originalFeedbackData);
+        return;
+    }
+
+    const filteredFeedback = originalFeedbackData.filter(item =>
+        (item.id && item.id.toString().includes(searchValue)) ||
+        (item.users_name && item.users_name.toLowerCase().includes(searchValue)) ||
+        (item.user_id && item.user_id.toString().includes(searchValue)) ||
+        (item.service_type && item.service_type.toLowerCase().includes(searchValue)) ||
+        (item.rating && item.rating.toString().includes(searchValue))
+    );
+    renderFeedback(filteredFeedback);
+}
+
+// Load feedback data
+async function loadFeedback() {
+    const feedbackSkeleton = document.getElementById("feedback-skeleton");
+    if (!feedbackSkeleton) {
+        console.error("Feedback skeleton grid not found");
+        return;
+    }
+
+    feedbackSkeleton.style.display = "grid";
+    const feedbackSpinner = new Spinner({ color: '#f26b0a', lines: 12 }).spin(feedbackSkeleton);
+
+    try {
+        const feedbackData = await fetchWithToken(FEEDBACK_API_URL, { method: "GET" });
+        feedbackSkeleton.style.display = "none";
+        feedbackSpinner.stop();
+
+        if (feedbackData && Array.isArray(feedbackData) && feedbackData.length > 0) {
+            originalFeedbackData = feedbackData;
+            renderFeedback(feedbackData);
+        } else {
+            originalFeedbackData = [];
+            renderFeedback([]);
+        }
+    } catch (error) {
+        console.error("Feedback Error:", error);
+        showAlert("error", "Error", "Failed to load feedback: " + error.message);
+        feedbackSkeleton.style.display = "none";
+        feedbackSpinner.stop();
+        renderFeedback([]);
+    }
+}
+
+// Load dashboard data
 async function loadDashboard(searchQuery = "") {
     if (!isLoggedIn()) {
         showAlert("error", "Unauthorized", "Please log in to continue", () => {
@@ -654,13 +827,15 @@ async function loadDashboard(searchQuery = "") {
         loadRecentUpdates(searchData),
         loadRecentUsers(searchData),
         loadPendingOrders(searchData),
-        loadArchivedOrders(searchData)
+        loadArchivedOrders(searchData),
+        loadOrdersChart()
     ]).catch(error => {
         console.error("Dashboard Load Error:", error);
         showAlert("error", "Error", "An error occurred while loading the dashboard: " + error.message);
     });
 }
 
+// Handle search input
 function handleSearch() {
     const searchQuery = document.getElementById("global-search-input")?.value.trim();
     loadDashboard(searchQuery);
@@ -670,26 +845,39 @@ function handleSearch() {
     }
 }
 
-function clearSearch() {
-    const searchInput = document.getElementById("global-search-input");
-    const clearButton = document.getElementById("clear-search");
-    if (searchInput && clearButton) {
-        searchInput.value = "";
-        clearButton.style.display = "none";
+// Initialize page
+document.addEventListener("DOMContentLoaded", () => {
+    const currentPage = window.location.pathname.split('/').pop();
+    if (currentPage === 'feedback.html') {
+        loadFeedback();
+
+        const searchInput = document.getElementById("global-search-input");
+        const clearSearchBtn = document.getElementById("clear-search");
+
+        if (searchInput && clearSearchBtn) {
+            searchInput.addEventListener("input", searchFeedback);
+            searchInput.addEventListener("blur", () => {
+                if (!searchInput.value) {
+                    clearSearchBtn.style.display = "none";
+                    renderFeedback(originalFeedbackData);
+                }
+            });
+        }
+    } else {
         loadDashboard("");
     }
-}
 
-document.addEventListener("DOMContentLoaded", () => {
-    loadDashboard("");
     const searchInput = document.getElementById("global-search-input");
     if (searchInput) {
         searchInput.addEventListener("input", handleSearch);
-        searchInput.addEventListener("blur", clearSearch);
     }
 
     setInterval(() => {
         const searchQuery = document.getElementById("global-search-input")?.value.trim() || "";
-        loadDashboard(searchQuery);
+        if (currentPage === 'feedback.html') {
+            loadFeedback();
+        } else {
+            loadDashboard(searchQuery);
+        }
     }, 300000);
 });

@@ -4,99 +4,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self' https://abdulrahmanantar.com; style-src 'self' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline'; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com; script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline'; img-src 'self' https://abdulrahmanantar.com https://placehold.co https://cdn-icons-png.flaticon.com data:;">
     <title>Pending Orders Management</title>
-    <link rel="icon" href="images/out bye.png" type="image/x-icon">
+    <link rel="icon" href="images/outbye.png?v=1" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/spin.js/2.3.2/spin.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
+        :root {
+            --primary: #f26b0a;
+            --secondary: #ff8c00;
+            --dark: #2b2d42;
+            --light: #f8fafc;
+            --text: #2d3748;
+            --card-bg: #ffffff;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --background-start: #f7fafc;
+            --background-end: #dfe6e9;
+            --action-view: #ff8c00;
+            --action-delete: #e63946;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: linear-gradient(135deg, var(--background-start) 0%, var(--background-end) 100%);
             min-height: 100vh;
             margin: 0;
-            padding: 0;
-            color: #333;
+            color: var(--text);
             overflow-x: hidden;
         }
 
+        /* Sidebar Styling */
         .sidebar {
             position: fixed;
             top: 0;
             left: 0;
             height: 100%;
             width: 260px;
-            background: #1e2a44;
+            background: var(--dark);
             color: #fff;
             padding: 30px 20px;
-            transition: all 0.3s;
+            transition: transform 0.3s ease;
             box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            transform: translateX(0);
+        }
+
+        .sidebar.active {
+            transform: translateX(0);
         }
 
         .sidebar .logo {
             display: flex;
             align-items: center;
-            justify-content: center;
-            margin-bottom: 30px;
+            gap: 15px;
+            margin-bottom: 40px;
         }
 
         .sidebar .logo img {
-            width: 60px;
-            height: 60px;
-            margin-right: 10px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
+            border: 2px solid var(--primary);
         }
 
         .sidebar .logo h3 {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             font-weight: 600;
             margin: 0;
         }
 
         .sidebar .nav-link {
             color: #d1d5db;
-            padding: 12px 20px;
-            font-size: 1.1rem;
+            padding: 7px 15px;
+            font-size: 1rem;
             display: flex;
             align-items: center;
+            gap: 10px;
             border-radius: 8px;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
         }
 
         .sidebar .nav-link:hover {
-            background: #f26b0a;
+            background: var(--primary);
             color: #fff;
             transform: translateX(5px);
         }
 
+        .sidebar .nav-link.active {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .sidebar .nav-link i {
+            font-size: 1rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Content Styling */
         .content {
             margin-left: 260px;
-            padding: 30px 30px 30px 0;
+            padding: 20px;
+            transition: margin-left 0.3s ease;
         }
 
-        .container-fluid {
-            padding: 0;
-        }
-
+        /* Header Styling */
         .header {
-            background: #fff;
-            padding: 20px 10px;
+            background: var(--card-bg);
+            padding: 15px 20px;
             border-radius: 12px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            box-shadow: var(--shadow);
             display: flex;
-            justify-content: flex-start;
+            justify-content: space-between;
             align-items: center;
-            gap: 30px;
-            margin-bottom: 30px;
-            animation: fadeIn 1s ease-in-out;
+            margin-bottom: 20px;
+            animation: slideIn 0.5s ease-out;
         }
 
         .header h1 {
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             font-weight: 600;
-            color: #1e2a44;
+            color: var(--dark);
             margin: 0;
         }
 
@@ -104,29 +136,31 @@
             display: flex;
             align-items: center;
             position: relative;
+            max-width: 350px;
+            width: 100%;
         }
 
         .header .search-container input {
-            width: 300px;
-            padding: 10px 40px 10px 15px;
-            border: 2px solid #e2e8f0;
+            width: 100%;
+            padding: 10px 40px;
+            border: 1px solid #e2e8f0;
             border-radius: 25px;
-            font-size: 1rem;
-            background: #f8fafc;
+            font-size: 0.9rem;
+            background: var(--light);
             transition: all 0.3s ease;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
         }
 
         .header .search-container input:focus {
             outline: none;
-            border-color: #f26b0a;
-            background: #fff;
-            box-shadow: 0 0 10px rgba(242, 107, 10, 0.2);
+            border-color: var(--primary);
+            box-shadow: 0 0 8px rgba(242, 107, 10, 0.2);
         }
 
-        .header .search-container input:hover {
-            border-color: #f26b0a;
-            background: #fff;
+        .header .search-container .search-icon {
+            position: absolute;
+            left: 15px;
+            color: #718096;
+            font-size: 0.9rem;
         }
 
         .header .search-container .clear-search {
@@ -134,124 +168,192 @@
             right: 15px;
             background: none;
             border: none;
-            color: #64748b;
-            font-size: 1.1rem;
+            color: #718096;
+            font-size: 0.9rem;
             cursor: pointer;
             display: none;
-            transition: color 0.3s;
+            transition: color 0.3s ease;
         }
 
         .header .search-container .clear-search:hover {
-            color: #f26b0a;
-        }
-
-        .card {
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-            overflow: hidden;
-            margin-bottom: 30px;
-        }
-
-        .card-header {
-            padding: 15px 20px;
-            background: linear-gradient(90deg, #f5f7fa, #c3cfe2);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .card-header h5 {
-            font-size: 1.2rem;
-            font-weight: 500;
-            color: #1e2a44;
-            margin: 0;
-        }
-
-        .card-body {
-            padding: 0;
-        }
-
-        .table {
-            margin: 0;
-        }
-
-        .table th {
-            background: #f1f5f9;
-            color: #1e2a44;
-            font-weight: 500;
-            padding: 15px;
-            text-align: center;
-        }
-
-        .table td {
-            padding: 15px;
-            vertical-align: middle;
-            text-align: center;
-            color: #4b5563;
-            transition: background 0.3s;
-        }
-
-        .table tr:hover td {
-            background: #f1f5f9;
+            color: var(--primary);
         }
 
         .btn-custom {
-            background: linear-gradient(90deg, #f26b0a, #ff5e62);
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
             color: #fff;
             border: none;
             border-radius: 8px;
-            padding: 10px 20px;
+            padding: 8px 16px;
             font-weight: 500;
-            transition: all 0.3s;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
         .btn-custom:hover {
-            background: linear-gradient(90deg, #ff5e62, #f26b0a);
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
             transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
-        .btn-danger {
-            background: linear-gradient(90deg, #dc3545, #ff6b6b);
-            color: #fff;
-            border: none;
+        /* Orders Grid */
+        .orders-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            padding: 10px 0;
+        }
+
+        .order-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 15px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .order-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .order-card img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
             border-radius: 8px;
-            padding: 10px 20px;
-            font-weight: 500;
-            transition: all 0.3s;
+            margin-bottom: 10px;
         }
 
-        .btn-danger:hover {
-            background: linear-gradient(90deg, #ff6b6b, #dc3545);
-            transform: translateY(-2px);
+        .order-card h5 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
+        .order-card .order-info {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-bottom: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .order-card .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-action {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-approve {
+            background: var(--action-view);
+        }
+
+        .btn-approve:hover {
+            background: #e07b00;
+        }
+
+        .btn-reject {
+            background: var(--action-delete);
+        }
+
+        .btn-reject:hover {
+            background: #d32f3c;
+        }
+
+        .btn-show-more {
+            background: none;
+            border: none;
+            color: var(--primary);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: color 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-show-more:hover {
+            color: var(--secondary);
+        }
+
+        /* Spinner */
         .spinner-container {
             display: none;
             justify-content: center;
             align-items: center;
-            height: 20px;
-            margin-bottom: 10px;
+            height: 40px;
+            margin: 15px 0;
         }
 
         .spinner-active {
             display: flex;
         }
 
+        /* Toggle Sidebar Button */
         .toggle-sidebar {
             display: none;
+            /* Hidden by default for large screens */
             position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 1000;
-            padding: 8px 16px;
-            font-size: 1rem;
+            top: 15px;
+            left: 15px;
+            z-index: 1100;
+            padding: 8px;
+            font-size: 0.9rem;
+            background: var(--primary);
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            transition: background 0.3s ease;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toggle-sidebar:hover {
+            background: var(--secondary);
+        }
+
+        /* Animations */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
 
         @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(10px);
             }
 
             to {
@@ -260,7 +362,44 @@
             }
         }
 
-        @media (max-width: 768px) {
+        /* Responsive Design */
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 260px;
+                transform: translateX(-260px);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .content {
+                margin-left: 0;
+                padding: 15px;
+            }
+
+            .toggle-sidebar {
+                display: flex;
+                /* Show the toggle button on small screens */
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+                padding: 12px 15px;
+            }
+
+            .header .search-container {
+                max-width: 100%;
+            }
+
+            .orders-grid {
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            }
+        }
+
+        @media (max-width: 576px) {
             .sidebar {
                 width: 220px;
                 transform: translateX(-220px);
@@ -271,26 +410,48 @@
             }
 
             .content {
-                margin-left: 0;
-                padding: 20px 20px 20px 0;
+                padding: 10px;
             }
 
-            .toggle-sidebar {
-                display: block;
+            .orders-grid {
+                grid-template-columns: 1fr;
             }
 
-            .header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-
-            .header .search-container {
-                width: 100%;
+            .header h1 {
+                font-size: 1.3rem;
             }
 
             .header .search-container input {
-                width: 100%;
+                font-size: 0.85rem;
+                padding: 8px 35px;
+            }
+
+            .header .search-container .search-icon,
+            .header .search-container .clear-search {
+                font-size: 0.85rem;
+            }
+
+            .order-card {
+                padding: 12px;
+            }
+
+            .order-card h5 {
+                font-size: 1rem;
+            }
+
+            .order-card .order-info {
+                font-size: 0.8rem;
+            }
+
+            .order-card img {
+                width: 40px;
+                height: 40px;
+            }
+
+            .btn-action,
+            .btn-show-more {
+                font-size: 0.8rem;
+                padding: 5px 10px;
             }
         }
     </style>
@@ -298,26 +459,27 @@
 
 <body>
     <!-- Toggle Sidebar Button -->
-    <button class="btn btn-custom toggle-sidebar" onclick="toggleSidebar()">
-        Menu
+    <button class="btn toggle-sidebar" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
     </button>
 
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="logo">
-            <img src="images/out bye.png" alt="Logo">
+            <img src="images/outbye.png" alt="Logo">
             <h3>Admin Dashboard</h3>
         </div>
         <nav class="nav flex-column">
-            <a class="nav-link" href="index.html">Dashboard</a>
-            <a class="nav-link" href="categories.html">Categories</a>
-            <a class="nav-link" href="services.html">Services</a>
-            <a class="nav-link" href="items.html">Items</a>
-            <a class="nav-link" href="pending-orders.html">Pending Orders</a>
-            <a class="nav-link" href="archive-orders.html">Archive Orders</a>
-            <a class="nav-link" href="users.html">Users</a>
-            <a class="nav-link" href="offers.html">Offers</a>
-            <a class="nav-link" href="#" onclick="logout()">Logout</a>
+            <a class="nav-link" href="index.html"><i class="fas fa-home"></i> Dashboard</a>
+            <a class="nav-link" href="categories.html"><i class="fas fa-list"></i> Categories</a>
+            <a class="nav-link" href="services.html"><i class="fas fa-cogs"></i> Services</a>
+            <a class="nav-link" href="items.html"><i class="fas fa-box"></i> Items</a>
+            <a class="nav-link active" href="pending-orders.html"><i class="fas fa-clock"></i> Pending Orders</a>
+            <a class="nav-link" href="archive-orders.html"><i class="fas fa-archive"></i> Archive Orders</a>
+            <a class="nav-link" href="users.html"><i class="fas fa-users"></i> Users</a>
+            <a class="nav-link" href="offers.html"><i class="fas fa-tags"></i> Offers</a>
+            <a class="nav-link" href="feedback.html"><i class="fas fa-star"></i> Feedback</a>
+            <a class="nav-link" href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
         </nav>
     </div>
 
@@ -327,41 +489,15 @@
             <div class="header">
                 <h1>Pending Orders Management</h1>
                 <div class="search-container">
+                    <i class="fas fa-search search-icon"></i>
                     <input type="text" id="global-search-input" placeholder="Search orders...">
                     <button id="clear-search" class="clear-search" onclick="clearSearch()">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
-                <button class="btn btn-custom" onclick="logout()">
-                    Logout
-                </button>
             </div>
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5>Pending Orders</h5>
-                </div>
-                <div id="orders-spinner" class="spinner-container"></div>
-                <div class="card-body">
-                    <table class="table table-hover table-striped mb-0">
-                        <thead class="bg-light">
-                            <tr>
-                                <th>Order ID</th>
-                                <th>User ID</th>
-                                <th>Address</th>
-                                <th>Type</th>
-                                <th>Price</th>
-                                <th>Delivery</th>
-                                <th>Total</th>
-                                <th>Coupon</th>
-                                <th>Payment</th>
-                                <th>Date</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="orders-table"></tbody>
-                    </table>
-                </div>
-            </div>
+            <div class="orders-grid" id="orders-grid"></div>
+            <div id="orders-spinner" class="spinner-container"></div>
         </div>
     </div>
 
