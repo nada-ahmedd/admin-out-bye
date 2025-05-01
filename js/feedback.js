@@ -1,4 +1,5 @@
 const API_BASE_URL = "https://abdulrahmanantar.com/outbye/admin/";
+const DELETE_FEEDBACK_API = "https://abdulrahmanantar.com/outbye/user_review/delete.php";
 const ENDPOINTS = {
     FEEDBACK: `${API_BASE_URL}feedback/view.php`
 };
@@ -37,7 +38,8 @@ async function fetchWithToken(url, options = {}) {
     const token = localStorage.getItem('adminToken');
     options.headers = {
         ...options.headers,
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/x-www-form-urlencoded'
     };
     console.log("Requesting:", url, "Options:", options);
 
@@ -78,6 +80,41 @@ function showAlert(icon, title, text, callback) {
     });
 }
 
+async function deleteFeedback(feedbackId) {
+    if (!isLoggedIn()) {
+        showAlert("error", "Unauthorized", "Please log in to continue");
+        window.location.href = 'login.html';
+        return;
+    }
+
+    const confirmed = await Swal.fire({
+        icon: 'warning',
+        title: 'Are you sure?',
+        text: 'This feedback will be permanently deleted.',
+        showCancelButton: true,
+        confirmButtonText: 'Delete',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#f26b0a',
+        cancelButtonColor: '#6c757d'
+    });
+
+    if (!confirmed.isConfirmed) return;
+
+    const response = await fetchWithToken(DELETE_FEEDBACK_API, {
+        method: 'POST',
+        body: new URLSearchParams({ id: feedbackId })
+    });
+
+    if (response.success && response.data?.status === 'success') {
+        showAlert('success', 'Deleted', 'Feedback deleted successfully');
+        // Update UI by removing the deleted feedback
+        originalFeedbackData = originalFeedbackData.filter(item => item.id !== feedbackId);
+        renderFeedback(originalFeedbackData);
+    } else {
+        showAlert('error', 'Error', response.error || 'Failed to delete feedback');
+    }
+}
+
 function renderFeedback(feedback) {
     const feedbackGrid = document.getElementById("feedback-table");
     if (!feedbackGrid) {
@@ -100,6 +137,9 @@ function renderFeedback(feedback) {
                 <div class="feedback-info">User: ${item.user_name}</div>
                 <div class="feedback-info">Rating: ${item.rating}</div>
                 <div class="feedback-info">Service: ${item.service_type}</div>
+                <button class="delete-btn" onclick="deleteFeedback('${item.id}')">
+                    <i class="fas fa-trash-alt"></i> Delete
+                </button>
             </div>
         `;
         feedbackGrid.innerHTML += card;
