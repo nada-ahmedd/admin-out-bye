@@ -55,10 +55,16 @@ async function fetchWithToken(url, options = {}) {
     const token = localStorage.getItem('adminToken');
     options.headers = {
         ...options.headers,
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/x-www-form-urlencoded' // Added for DELETE API
+        'Authorization': `Bearer ${token}`
     };
+
+    // Set Content-Type only if not using FormData
+    if (!(options.body instanceof FormData)) {
+        options.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+    }
+
     console.log("Requesting:", url, "Options:", options);
+    console.log("Token being sent:", token);
 
     try {
         const response = await fetch(url, options);
@@ -185,6 +191,7 @@ async function sendNotification() {
             formData.append('title', formValues.title);
             formData.append('body', formValues.body);
             console.log("Sending notification:", formValues);
+            console.log("FormData:", [...formData.entries()]);
 
             const response = await fetchWithToken(ENDPOINTS.SEND_NOTIFICATION, {
                 method: "POST",
