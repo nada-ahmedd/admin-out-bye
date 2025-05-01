@@ -1,6 +1,7 @@
 const API_BASE_URL = "https://abdulrahmanantar.com/outbye/admin/";
 const SEARCH_API_URL = "https://abdulrahmanantar.com/outbye/items/search.php";
 const FEEDBACK_API_URL = "https://abdulrahmanantar.com/outbye/user_review/view.php";
+const DELETE_FEEDBACK_API = "https://abdulrahmanantar.com/outbye/user_review/delete.php";
 
 const ENDPOINTS = {
     CATEGORIES: `${API_BASE_URL}categories/view.php`,
@@ -54,7 +55,8 @@ async function fetchWithToken(url, options = {}) {
     const token = localStorage.getItem('adminToken');
     options.headers = {
         ...options.headers,
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/x-www-form-urlencoded' // Added for DELETE API
     };
     console.log("Requesting:", url, "Options:", options);
 
@@ -112,6 +114,48 @@ function showAlert(icon, title, text, callback) {
     }).then(() => {
         if (callback) callback();
     });
+}
+
+// Delete feedback
+async function deleteFeedback(feedbackId) {
+    if (!isLoggedIn()) {
+        showAlert("error", "Unauthorized", "Please log in to continue", () => {
+            window.location.href = 'login.html';
+        });
+        return;
+    }
+
+    const confirmed = await Swal.fire({
+        icon: 'warning',
+        title: 'Are you sure?',
+        text: 'This feedback will be permanently deleted.',
+        showCancelButton: true,
+        confirmButtonText: 'Delete',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#f26b0a',
+        cancelButtonColor: '#6c757d'
+    });
+
+    if (!confirmed.isConfirmed) return;
+
+    try {
+        const response = await fetchWithToken(DELETE_FEEDBACK_API, {
+            method: 'POST',
+            body: new URLSearchParams({ id: feedbackId })
+        });
+
+        if (response.status === 'success') {
+            showAlert('success', 'Deleted', 'Feedback deleted successfully');
+            // Update UI by removing the deleted feedback
+            originalFeedbackData = originalFeedbackData.filter(item => item.id !== feedbackId);
+            renderFeedback(originalFeedbackData);
+        } else {
+            showAlert('error', 'Error', response.message || 'Failed to delete feedback');
+        }
+    } catch (error) {
+        console.error("Delete Feedback Error:", error);
+        showAlert('error', 'Error', 'Failed to delete feedback: ' + error.message);
+    }
 }
 
 // Send notification to all users
@@ -733,6 +777,9 @@ function renderFeedback(feedback) {
                 <div class="feedback-info">Comment: ${item.comment}</div>
                 <div class="feedback-info">Rating: ${stars}</div>
                 <div class="feedback-info">Service: ${item.service_type}</div>
+                <button class="delete-btn" onclick="deleteFeedback('${item.id}')">
+                    <i class="fas fa-trash-alt"></i> Delete
+                </button>
             </div>
         `;
         feedbackGrid.innerHTML += card;
