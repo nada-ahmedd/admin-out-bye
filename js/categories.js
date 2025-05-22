@@ -145,7 +145,7 @@ function loadCategoriesIntoGrid(categories) {
                     <div>
                         <button class="btn btn-action btn-view" onclick="viewServices(${category.categories_id})">View</button>
                         <button class="btn btn-action btn-edit" onclick="prepareEditCategory(${category.categories_id}, '${category.categories_name}', '${category.categories_name_ar}', '${category.categories_image}')">Edit</button>
-                        <button class="btn btn-action btn-delete" onclick="deleteCategory(${category.categories_id}, '${category.categories_image}')">Delete</button>
+                        <button class="btn btn-action btn-delete" onclick="deleteCategory(${category.categories_id}, '${category.categories_image}', '${category.categories_name}')">Delete</button>
                     </div>
                     <button class="btn-show-more" onclick="showCategoryDetails(${category.categories_id}, '${category.categories_name}', '${category.categories_name_ar}', '${category.categories_image}', '${category.categories_datetime}')">Show More</button>
                 </div>
@@ -321,10 +321,10 @@ async function editCategory() {
     }
 }
 
-async function deleteCategory(id, imageName) {
+async function deleteCategory(id, imageName, name) {
     const result = await Swal.fire({
         title: 'Are you sure?',
-        text: "This category will be moved to Trash!",
+        text: `This category "${name || 'N/A'}" will be moved to Trash!`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Yes, move to Trash!',

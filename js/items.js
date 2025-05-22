@@ -160,7 +160,7 @@ function renderItems(items, limit = displayedItemsCount) {
                 <div class="actions">
                     <div>
                         <button class="btn btn-action btn-edit" data-tooltip="Edit item" onclick="prepareEditItem('${item.items_id}', '${item.service_id}', '${item.items_name}', '${item.items_name_ar}', '${item.items_des}', '${item.items_des_ar}', '${item.items_count}', '${item.items_active}', '${item.items_price}', '${item.items_discount}', '${item.items_cat}', '${item.items_image}')">Edit</button>
-                        <button class="btn btn-action btn-delete" data-tooltip="Delete item" onclick="deleteItem('${item.items_id}', '${item.items_image}')">Delete</button>
+                        <button class="btn btn-action btn-delete" data-tooltip="Delete item" onclick="deleteItem('${item.items_id}', '${item.items_image}', '${item.items_name}')">Delete</button>
                     </div>
                     <button class="btn-show-more" onclick="showItemDetails('${item.items_id}', '${item.service_id}', '${item.items_name}', '${item.items_name_ar}', '${item.items_des}', '${item.items_des_ar}', '${item.items_count}', '${item.items_active}', '${item.items_price}', '${item.items_discount}', '${item.items_cat}', '${item.items_date}', '${item.items_image}')">Show More</button>
                 </div>
@@ -422,13 +422,13 @@ async function editItem() {
     }
 }
 
-async function deleteItem(id, imageName) {
+async function deleteItem(id, imageName, name) {
     const result = await Swal.fire({
         title: 'Are you sure?',
-        text: "This item will be deleted permanently!",
+        text: `This item "${name || 'N/A'}" will be moved to Trash!`,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonText: 'Yes, delete it!',
+        confirmButtonText: 'Yes, move to Trash!',
         cancelButtonText: 'Cancel',
         confirmButtonColor: '#f26b0a'
     });
@@ -442,13 +442,13 @@ async function deleteItem(id, imageName) {
     try {
         const data = await fetchWithToken(ENDPOINTS.DELETE, { method: "POST", body: formData });
         if (data.status === "success") {
-            showAlert("success", "Success", data.message || "Item deleted successfully.");
+            showAlert("success", "Success", data.message || "Item moved to Trash successfully.");
             loadItems();
         } else {
-            showAlert("error", "Error", data.message || "Failed to delete item.");
+            showAlert("error", "Error", data.message || "Failed to move item to Trash.");
         }
     } catch (error) {
-        showAlert("error", "Error", `Failed to delete item: ${error.message}`);
+        showAlert("error", "Error", `Failed to move item to Trash: ${error.message}`);
     }
 }
 

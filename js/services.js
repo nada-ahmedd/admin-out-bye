@@ -144,7 +144,7 @@ async function loadServices() {
         skeletonGrid.style.display = "none";
 
         if (Array.isArray(data)) {
-            originalServicesData = data;
+            originalServicesData = data.filter(service => service.is_deleted === "0");
             filteredServicesData = [...originalServicesData];
             renderServices(filteredServicesData, displayedServicesCount);
         } else {
@@ -182,7 +182,7 @@ function renderServices(services, limit = displayedServicesCount) {
                     <div>
                         <button class="btn btn-action btn-view" data-tooltip="View items" onclick="window.location.href='service_items.html?service_id=${service.service_id}'">View Items</button>
                         <button class="btn btn-action btn-edit" data-tooltip="Edit service" data-bs-toggle="modal" data-bs-target="#serviceModal" data-service-id="${service.service_id}">Edit</button>
-                        <button class="btn btn-action btn-delete" data-tooltip="Delete service" onclick="deleteService('${service.service_id}', '${service.service_image}')">Delete</button>
+                        <button class="btn btn-action btn-delete" data-tooltip="Move to trash" onclick="moveToTrash('${service.service_id}', '${service.service_image}', '${service.service_name}')">Delete</button>
                     </div>
                     <button class="btn-show-more" onclick="showServiceDetails('${service.service_id}', '${service.service_name}', '${service.service_name_ar}', '${service.service_description}', '${service.service_description_ar}', '${service.service_location}', '${service.service_rating}', '${service.service_phone}', '${service.service_email}', '${service.service_website}', '${service.service_cat}', '${service.service_type}', '${service.service_active}', '${service.service_created}', '${service.service_image}')">Show More</button>
                 </div>
@@ -544,13 +544,13 @@ async function editService() {
     }
 }
 
-async function deleteService(id, imageName) {
+async function moveToTrash(id, imageName, name) {
     const result = await Swal.fire({
         title: 'Are you sure?',
-        text: "This service will be deleted permanently!",
+        text: `This service "${name || 'N/A'}" will be moved to trash!`,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonText: 'Yes, delete it!',
+        confirmButtonText: 'Yes, move it!',
         cancelButtonText: 'Cancel',
         confirmButtonColor: '#f26b0a'
     });
@@ -564,13 +564,13 @@ async function deleteService(id, imageName) {
     try {
         const data = await fetchWithToken(ENDPOINTS.DELETE, { method: "POST", body: formData });
         if (data.status === "success") {
-            showAlert("success", "Success", data.message || "Service deleted successfully.");
+            showAlert("success", "Success", data.message || "Service moved to trash successfully.");
             loadServices();
         } else {
-            showAlert("error", "Error", data.message || "Failed to delete service.");
+            showAlert("error", "Error", data.message || "Failed to move service to trash.");
         }
     } catch (error) {
-        showAlert("error", "Error", `Failed to delete service: ${error.message}`);
+        showAlert("error", "Error", `Failed to move service to trash: ${error.message}`);
     }
 }
 

@@ -202,7 +202,7 @@ function renderServices(services, limit = displayedServicesCount) {
                 <div class="actions">
                     <button class="btn btn-action btn-view-items" data-tooltip="View service items" onclick="window.location.href='service_items.html?service_id=${service.service_id}'">View Items</button>
                     <button class="btn btn-action btn-edit" data-tooltip="Edit service" data-bs-toggle="modal" data-bs-target="#serviceModal" data-service-id="${service.service_id}">Edit</button>
-                    <button class="btn btn-action btn-delete" data-tooltip="Delete service" onclick="deleteService('${service.service_id}', '${service.service_image}')">Delete</button>
+                    <button class="btn btn-action btn-delete" data-tooltip="Delete service" onclick="deleteService('${service.service_id}', '${service.service_image}', '${service.service_name}')">Delete</button>
                 </div>
             </div>
         `;
@@ -445,9 +445,10 @@ async function editService() {
     }
 }
 
-async function deleteService(id, imageName) {
+async function deleteService(id, imageName, name) {
     const result = await Swal.fire({
         title: 'Are you sure?',
+        text: `This service "${name || 'N/A'}" will be deleted!`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Yes, delete it!',

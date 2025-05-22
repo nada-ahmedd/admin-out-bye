@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy"
         content="default-src 'self' https://abdulrahmanantar.com; style-src 'self' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com 'unsafe-inline'; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com; script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com 'unsafe-inline'; img-src 'self' https://abdulrahmanantar.com https://placehold.co https://cdn-icons-png.flaticon.com data:;">
-    <title>Trash Categories</title>
+    <title>Trash Services</title>
     <link rel="icon" href="images/outbye.png?v=1" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -191,7 +191,7 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
-        .categories-grid {
+        .services-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
@@ -200,12 +200,12 @@
         }
 
         @media (min-width: 1200px) {
-            .categories-grid {
+            .services-grid {
                 grid-template-columns: repeat(4, 1fr);
             }
         }
 
-        .category-card {
+        .service-card {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 12px;
@@ -217,13 +217,13 @@
             animation: fadeIn 0.5s ease-out;
         }
 
-        .category-card:hover {
+        .service-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
             background: var(--hover-bg);
         }
 
-        .category-card img {
+        .service-card img {
             width: 60px;
             height: 60px;
             object-fit: cover;
@@ -231,7 +231,7 @@
             margin-bottom: 10px;
         }
 
-        .category-card h5 {
+        .service-card h5 {
             font-size: 1.1rem;
             font-weight: 600;
             color: var(--dark);
@@ -241,7 +241,7 @@
             text-overflow: ellipsis;
         }
 
-        .category-card .category-info {
+        .service-card .service-info {
             font-size: 0.85rem;
             color: #64748b;
             margin-bottom: 8px;
@@ -250,7 +250,7 @@
             text-overflow: ellipsis;
         }
 
-        .category-card .actions {
+        .service-card .actions {
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
@@ -477,7 +477,7 @@
                 max-width: 100%;
             }
 
-            .categories-grid {
+            .services-grid {
                 grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             }
         }
@@ -496,7 +496,7 @@
                 padding: 10px;
             }
 
-            .categories-grid {
+            .services-grid {
                 grid-template-columns: 1fr;
             }
 
@@ -514,15 +514,15 @@
                 font-size: 0.85rem;
             }
 
-            .category-card {
+            .service-card {
                 padding: 12px;
             }
 
-            .category-card h5 {
+            .service-card h5 {
                 font-size: 1rem;
             }
 
-            .category-card .category-info {
+            .service-card .service-info {
                 font-size: 0.8rem;
             }
 
@@ -573,24 +573,24 @@
     <div class="content">
         <div class="container-fluid">
             <div class="header" data-aos="fade-down">
-                <h1>Deleted Categories</h1>
+                <h1>Deleted Services</h1>
                 <div class="actions-container">
                     <div class="search-container">
                         <i class="fas fa-search search-icon"></i>
-                        <input type="text" id="category-search-input" placeholder="Search categories...">
+                        <input type="text" id="service-search-input" placeholder="Search services...">
                         <button id="clear-search" class="clear-search" onclick="clearSearch()">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
-                    <button class="btn btn-custom" onclick="loadTrashCategories()">
+                    <button class="btn btn-custom" onclick="loadTrashServices()">
                         <i class="fas fa-sync me-1"></i> Refresh
                     </button>
                 </div>
             </div>
-            <h2 class="section-header">Deleted Categories List</h2>
-            <div class="categories-grid" id="categories-grid"></div>
-            <div id="categories-view-more" class="view-more-container" style="display: none;">
-                <button class="btn-toggle-view" id="categories-toggle-btn" onclick="toggleView()">
+            <h2 class="section-header">Deleted Services List</h2>
+            <div class="services-grid" id="services-grid"></div>
+            <div id="services-view-more" class="view-more-container" style="display: none;">
+                <button class="btn-toggle-view" id="services-toggle-btn" onclick="toggleView()">
                     <span>View More</span>
                     <i class="fas fa-chevron-down"></i>
                 </button>
@@ -602,16 +602,17 @@
     <script>
         const TRASH_API_BASE_URL = "https://abdulrahmanantar.com/outbye/admin/trach/";
         const ENDPOINTS = {
-            CATEGORIES_VIEW: `${TRASH_API_BASE_URL}categories/view.php`,
-            CATEGORIES_RESTORE: `${TRASH_API_BASE_URL}categories/restore.php`,
-            CATEGORIES_DELETE: `${TRASH_API_BASE_URL}categories/delete.php`
+            SERVICES_VIEW: `${TRASH_API_BASE_URL}services/view.php`,
+            SERVICES_RESTORE: `${TRASH_API_BASE_URL}services/restore.php`,
+            SERVICES_DELETE: `${TRASH_API_BASE_URL}services/delete.php`
         };
 
-        let originalCategoriesData = [];
-        let filteredCategoriesData = [];
-        let displayedCategoriesCount = 10;
-        let isCategoriesExpanded = false;
-        const CATEGORIES_PER_PAGE = 10;
+        const DEFAULT_IMAGE = 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+        let originalTrashServices = [];
+        let filteredTrashServices = [];
+        let displayedServicesCount = 10;
+        let isServicesExpanded = false;
+        const SERVICES_PER_PAGE = 10;
 
         function isLoggedIn() {
             return localStorage.getItem('isAdminLoggedIn') === 'true' && localStorage.getItem('adminToken');
@@ -644,11 +645,13 @@
 
             if (!(options.body instanceof FormData)) {
                 options.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+                if (typeof options.body === 'object') {
+                    options.body = new URLSearchParams(options.body).toString();
+                }
             }
 
             try {
                 const response = await fetch(url, options);
-                const text = await response.text();
                 if (!response.ok) {
                     if (response.status === 401) {
                         showAlert("error", "Session Expired", "Please log in again.", () => {
@@ -656,10 +659,10 @@
                         });
                         throw new Error("Unauthorized");
                     }
-                    console.error("Fetch Error Raw Response:", text);
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }
 
+                const text = await response.text();
                 let data;
                 try {
                     const trimmedText = text.trim();
@@ -668,19 +671,9 @@
                     }
                     data = JSON.parse(trimmedText);
                 } catch (e) {
-                    console.warn("JSON Parse Error:", e, "Raw Response:", text);
-                    const jsonMatch = text.match(/{[^}]+}/g);
-                    if (jsonMatch) {
-                        for (let jsonStr of jsonMatch) {
-                            try {
-                                data = JSON.parse(jsonStr);
-                                if (data.status) {
-                                    return data;
-                                }
-                            } catch (innerError) {
-                                continue;
-                            }
-                        }
+                    console.error("JSON Parse Error:", e, "Raw:", text);
+                    if (text.includes('"status":"success"')) {
+                        return { status: "success", message: "Operation completed successfully (parsed from raw response)" };
                     }
                     throw new Error("Invalid JSON response: " + e.message);
                 }
@@ -703,7 +696,7 @@
             });
         }
 
-        async function restoreCategory(categoryId) {
+        async function loadTrashServices() {
             if (!isLoggedIn()) {
                 showAlert("error", "Unauthorized", "Please log in to continue.", () => {
                     window.location.href = 'login.html';
@@ -711,187 +704,80 @@
                 return;
             }
 
-            if (!categoryId || isNaN(categoryId) || categoryId === "undefined") {
-                showAlert("error", "Error", "Invalid category ID.");
+            const tableSpinnerContainer = document.getElementById("table-spinner");
+            if (!tableSpinnerContainer) {
+                console.error("Table spinner container not found");
                 return;
             }
 
-            const confirmed = await Swal.fire({
-                icon: 'warning',
-                title: 'Are you sure?',
-                text: 'This category will be restored.',
-                showCancelButton: true,
-                confirmButtonText: 'Restore',
-                cancelButtonText: 'Cancel',
-                confirmButtonColor: '#f26b0a',
-                cancelButtonColor: '#6c757d'
-            });
-
-            if (!confirmed.isConfirmed) return;
+            tableSpinnerContainer.classList.add("spinner-active");
+            const tableSpinner = new Spinner({ color: '#f26b0a', lines: 12 }).spin(tableSpinnerContainer);
 
             try {
-                const formData = new FormData();
-                formData.append('id', categoryId);
-                console.log("Restoring category with ID:", categoryId);
-                const response = await fetchWithToken(ENDPOINTS.CATEGORIES_RESTORE, {
-                    method: 'POST',
-                    body: formData
-                });
+                const response = await fetchWithToken(ENDPOINTS.SERVICES_VIEW, { method: "GET" });
+                tableSpinnerContainer.classList.remove("spinner-active");
+                tableSpinner.stop();
 
-                if (response.status === 'success') {
-                    showAlert('success', 'Restored', response.message || 'Category restored successfully');
-                    loadTrashCategories();
+                if (response && response.status === "success" && Array.isArray(response.data)) {
+                    originalTrashServices = response.data;
+                    filteredTrashServices = [...originalTrashServices];
+                    renderTrashServices(filteredTrashServices, displayedServicesCount);
                 } else {
-                    showAlert('error', 'Error', response.message || 'Failed to restore category');
+                    console.warn("Invalid response format, using empty data:", response);
+                    originalTrashServices = [];
+                    filteredTrashServices = [];
+                    renderTrashServices([]);
                 }
             } catch (error) {
-                console.error("Restore Category Error:", error);
-                if (error.message.includes("Invalid JSON response") && error.message.includes("Operation successful")) {
-                    showAlert('success', 'Restored', 'Category restored successfully');
-                    loadTrashCategories();
-                } else {
-                    showAlert('error', 'Error', 'Failed to restore category: ' + error.message);
-                }
+                tableSpinnerContainer.classList.remove("spinner-active");
+                tableSpinner.stop();
+                showAlert("error", "Error", `Failed to load trash services: ${error.message}`);
+                renderTrashServices([]);
             }
         }
 
-        async function deleteCategory(categoryId) {
-            if (!isLoggedIn()) {
-                showAlert("error", "Unauthorized", "Please log in to continue.", () => {
-                    window.location.href = 'login.html';
-                });
-                return;
-            }
-
-            if (!categoryId || isNaN(categoryId) || categoryId === "undefined") {
-                showAlert("error", "Error", "Invalid category ID.");
-                return;
-            }
-
-            const { value: credentials } = await Swal.fire({
-                title: 'Delete Category',
-                html: `
-                    <input type="text" id="email" class="swal2-input" placeholder="Email">
-                    <input type="password" id="password" class="swal2-input" placeholder="Password">
-                `,
-                focusConfirm: false,
-                showCancelButton: true,
-                confirmButtonText: 'Delete',
-                cancelButtonText: 'Cancel',
-                confirmButtonColor: '#dc3545',
-                cancelButtonColor: '#6c757d',
-                preConfirm: () => {
-                    const email = document.getElementById('email').value;
-                    const password = document.getElementById('password').value;
-                    if (!email || !password) {
-                        Swal.showValidationMessage('Email and password are required');
-                        return false;
-                    }
-                    return { email, password };
-                }
-            });
-
-            if (!credentials) return;
-
-            try {
-                const formData = new FormData();
-                formData.append('id', categoryId);
-                formData.append('email', credentials.email);
-                formData.append('password', credentials.password);
-                console.log("Deleting category with ID:", categoryId, "Email:", credentials.email);
-                const response = await fetchWithToken(ENDPOINTS.CATEGORIES_DELETE, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (response.status === 'success') {
-                    showAlert('success', 'Deleted', response.message || 'Category deleted permanently');
-                    loadTrashCategories();
-                } else {
-                    let errorMessage = response.message || 'Failed to delete category';
-                    if (errorMessage.includes('كلمة المرور غير صحيحة')) {
-                        errorMessage = 'Incorrect password.';
-                    } else if (errorMessage.includes('لم يتم العثور على بيانات الأدمن')) {
-                        errorMessage = 'Admin data not found.';
-                    }
-                    showAlert('error', 'Authentication Error', errorMessage);
-                }
-            } catch (error) {
-                console.error("Delete Category Error:", error);
-                let errorMessage = error.message;
-                if (errorMessage.includes('كلمة المرور غير صحيحة')) {
-                    errorMessage = 'Incorrect password.';
-                } else if (errorMessage.includes('لم يتم العثور على بيانات الأدمن')) {
-                    errorMessage = 'Admin data not found.';
-                } else {
-                    errorMessage = 'Failed to delete category: ' + error.message;
-                }
-                showAlert('error', 'Error', errorMessage);
-            }
-        }
-
-        function showCategoryDetails(id, name, image, date) {
-            const imageSrc = image || 'images/placeholder.png';
-            Swal.fire({
-                title: `Category: ${name || 'N/A'}`,
-                html: `
-                    <div style="text-align: center;">
-                        <img src="${imageSrc}" alt="${name}" style="width: 100%; max-width: 200px; border-radius: 8px; margin-bottom: 15px;">
-                        <div style="text-align: left; font-size: 0.9rem; line-height: 1.5;">
-                            <p><strong>ID:</strong> ${id}</p>
-                            <p><strong>Name:</strong> ${name || 'N/A'}</p>
-                            <p><strong>Date:</strong> ${date || 'N/A'}</p>
-                        </div>
-                    </div>
-                `,
-                confirmButtonText: 'Close',
-                confirmButtonColor: '#f26b0a'
-            });
-        }
-
-        function renderCategories(categories, limit = displayedCategoriesCount) {
-            const grid = document.getElementById("categories-grid");
+        function renderTrashServices(services, limit = displayedServicesCount) {
+            const grid = document.getElementById("services-grid");
             grid.innerHTML = '';
 
-            if (!categories || categories.length === 0) {
-                grid.innerHTML = '<p class="text-center text-muted w-100">No deleted categories found.</p>';
-                document.getElementById("categories-view-more").style.display = "none";
+            if (!services || services.length === 0) {
+                grid.innerHTML = '<p class="text-center text-muted w-100">No deleted services found.</p>';
+                document.getElementById("services-view-more").style.display = "none";
                 return;
             }
 
-            const categoriesToShow = categories.slice(0, limit);
-            categoriesToShow.forEach(category => {
-                const categoryId = category.categories_id || category.id || '';
-                if (!categoryId || isNaN(categoryId)) {
-                    console.warn("Invalid category ID for category:", category);
-                    return;
-                }
+            const servicesToShow = services.slice(0, limit);
+            servicesToShow.forEach(service => {
+                const imageSrc = service.service_image && service.service_image !== "null" && service.service_image !== ""
+                    ? service.service_image
+                    : DEFAULT_IMAGE;
+
                 const card = `
-                    <div class="category-card">
-                        <img src="${category.categories_image || 'images/placeholder.png'}" alt="Category Image">
-                        <h5>Category #${categoryId}</h5>
-                        <div class="category-info">Name: ${category.categories_name || 'N/A'}</div>
-                        <div class="category-info">Date: ${category.categories_datetime || 'N/A'}</div>
+                    <div class="service-card">
+                        <img src="${imageSrc}" alt="Service Image" onerror="this.src='${DEFAULT_IMAGE}'">
+                        <h5>Service #${service.service_id}</h5>
+                        <div class="service-info">Name: ${service.service_name || 'N/A'}</div>
+                        <div class="service-info">Deleted At: ${service.deleted_at || 'N/A'}</div>
                         <div class="actions">
                             <div>
-                                <button class="btn btn-action btn-restore" data-tooltip="Restore category" onclick="restoreCategory(${categoryId})">Restore</button>
-                                <button class="btn btn-action btn-delete" data-tooltip="Delete category" onclick="deleteCategory(${categoryId})">Delete</button>
+                                <button class="btn btn-action btn-restore" data-tooltip="Restore service" onclick="restoreService('${service.service_id}', '${service.service_name}')">Restore</button>
+                                <button class="btn btn-action btn-delete" data-tooltip="Permanently delete" onclick="permanentlyDeleteService('${service.service_id}', '${service.service_image}', '${service.service_name}')">Delete</button>
                             </div>
-                            <button class="btn-show-more" onclick="showCategoryDetails('${categoryId}', '${category.categories_name || 'N/A'}', '${category.categories_image || 'images/placeholder.png'}', '${category.categories_datetime || 'N/A'}')">Show More</button>
+                            <button class="btn-show-more" onclick="showServiceDetails('${service.service_id}', '${service.service_name}', '${imageSrc}', '${service.deleted_at}')">Show More</button>
                         </div>
                     </div>
                 `;
                 grid.innerHTML += card;
             });
 
-            const viewMoreContainer = document.getElementById("categories-view-more");
-            const toggleBtn = document.getElementById("categories-toggle-btn");
+            const viewMoreContainer = document.getElementById("services-view-more");
+            const toggleBtn = document.getElementById("services-toggle-btn");
             const toggleBtnText = toggleBtn.querySelector('span');
             const toggleBtnIcon = toggleBtn.querySelector('i');
 
-            if (categories.length > CATEGORIES_PER_PAGE) {
+            if (services.length > SERVICES_PER_PAGE) {
                 viewMoreContainer.style.display = "block";
-                if (isCategoriesExpanded) {
+                if (isServicesExpanded) {
                     toggleBtnText.textContent = "View Less";
                     toggleBtn.classList.add("view-less");
                     toggleBtnIcon.classList.replace("fa-chevron-down", "fa-chevron-up");
@@ -907,82 +793,154 @@
             }
         }
 
-        async function loadTrashCategories() {
-            const tableSpinnerContainer = document.getElementById("table-spinner");
-            if (!tableSpinnerContainer) {
-                console.error("Table spinner container not found");
-                return;
-            }
+        function showServiceDetails(id, name, image, deletedAt) {
+            const imageSrc = image || DEFAULT_IMAGE;
+            Swal.fire({
+                title: `Service: ${name || 'N/A'}`,
+                html: `
+                    <div style="text-align: center;">
+                        <img src="${imageSrc}" alt="${name}" style="width: 100%; max-width: 200px; border-radius: 8px; margin-bottom: 15px;">
+                        <div style="text-align: left; font-size: 0.9rem; line-height: 1.5;">
+                            <p><strong>ID:</strong> ${id}</p>
+                            <p><strong>Name:</strong> ${name || 'N/A'}</p>
+                            <p><strong>Deleted At:</strong> ${deletedAt || 'N/A'}</p>
+                        </div>
+                    </div>
+                `,
+                confirmButtonText: 'Close',
+                confirmButtonColor: '#f26b0a'
+            });
+        }
 
-            tableSpinnerContainer.classList.add("spinner-active");
-            const tableSpinner = new Spinner({ color: '#f26b0a', lines: 12 }).spin(tableSpinnerContainer);
+        async function restoreService(id, name) {
+            const result = await Swal.fire({
+                title: 'Are you sure?',
+                text: `This service "${name || 'N/A'}" will be restored!`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, restore it!',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#f26b0a',
+                cancelButtonColor: '#6c757d'
+            });
+
+            if (!result.isConfirmed) return;
+
+            const formData = new FormData();
+            formData.append("id", id);
 
             try {
-                const response = await fetchWithToken(ENDPOINTS.CATEGORIES_VIEW, { method: "GET" });
-                if (response.status === "success" && Array.isArray(response.data)) {
-                    originalCategoriesData = response.data;
-                    filteredCategoriesData = [...originalCategoriesData];
-                    renderCategories(filteredCategoriesData, displayedCategoriesCount);
+                const data = await fetchWithToken(ENDPOINTS.SERVICES_RESTORE, { method: "POST", body: formData });
+                if (data.status === "success") {
+                    showAlert("success", "Success", data.message || "Service restored successfully.");
+                    loadTrashServices();
                 } else {
-                    renderCategories([]);
+                    showAlert("error", "Error", data.message || "Failed to restore service.");
                 }
             } catch (error) {
-                console.error("Load Trash Categories Error:", error);
-                showAlert("error", "Error", "Failed to load deleted categories: " + error.message);
-                renderCategories([]);
-            } finally {
-                tableSpinner.stop();
-                tableSpinnerContainer.classList.remove("spinner-active");
+                showAlert("error", "Error", `Failed to restore service: ${error.message}`);
             }
         }
 
-        function searchCategories() {
-            const searchInput = document.getElementById("category-search-input").value.trim().toLowerCase();
+        async function permanentlyDeleteService(id, imageName, name) {
+            const { value: formValues } = await Swal.fire({
+                title: 'Confirm Permanent Deletion',
+                html: `
+                    <p>Are you sure you want to permanently delete "${name || 'N/A'}"?</p>
+                    <input id="swal-email" class="swal2-input" placeholder="Email" type="email">
+                    <input id="swal-password" class="swal2-input" placeholder="Password" type="password">
+                `,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#f26b0a',
+                cancelButtonColor: '#6c757d',
+                preConfirm: () => {
+                    const email = document.getElementById('swal-email').value;
+                    const password = document.getElementById('swal-password').value;
+                    if (!email || !password) {
+                        Swal.showValidationMessage('Email and password are required');
+                        return false;
+                    }
+                    return { email, password };
+                }
+            });
+
+            if (!formValues) return;
+
+            const { email, password } = formValues;
+            if (!email || !password) {
+                showAlert("error", "Error", "Email and password are required.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("id", id);
+            formData.append("imagename", imageName || "");
+            formData.append("email", email);
+            formData.append("password", password);
+
+            try {
+                const data = await fetchWithToken(ENDPOINTS.SERVICES_DELETE, { method: "POST", body: formData });
+                if (data.status === "success") {
+                    showAlert("success", "Success", data.message || "Service permanently deleted successfully.");
+                    loadTrashServices();
+                } else {
+                    let errorMessage = data.message || "Failed to permanently delete service.";
+                    showAlert("error", "Error", errorMessage);
+                }
+            } catch (error) {
+                showAlert("error", "Error", `Failed to permanently delete service: ${error.message}`);
+            }
+        }
+
+        function clearSearch() {
+            const searchInput = document.getElementById("service-search-input");
+            searchInput.value = "";
+            document.getElementById("clear-search").style.display = "none";
+            filteredTrashServices = [...originalTrashServices];
+            displayedServicesCount = SERVICES_PER_PAGE;
+            isServicesExpanded = false;
+            renderTrashServices(filteredTrashServices, displayedServicesCount);
+        }
+
+        function searchServices() {
+            const searchInput = document.getElementById("service-search-input").value.trim().toLowerCase();
             const clearSearchBtn = document.getElementById("clear-search");
             clearSearchBtn.style.display = searchInput ? "block" : "none";
 
             if (!searchInput) {
-                filteredCategoriesData = [...originalCategoriesData];
-                displayedCategoriesCount = CATEGORIES_PER_PAGE;
-                isCategoriesExpanded = false;
-                renderCategories(filteredCategoriesData, displayedCategoriesCount);
+                filteredTrashServices = [...originalTrashServices];
+                displayedServicesCount = SERVICES_PER_PAGE;
+                isServicesExpanded = false;
+                renderTrashServices(filteredTrashServices, displayedServicesCount);
                 return;
             }
 
-            filteredCategoriesData = originalCategoriesData.filter(category =>
-                (category.categories_id && category.categories_id.toString().includes(searchInput)) ||
-                (category.categories_name && category.categories_name.toLowerCase().includes(searchInput)) ||
-                (category.categories_datetime && category.categories_datetime.toLowerCase().includes(searchInput))
+            filteredTrashServices = originalTrashServices.filter(service =>
+                (service.service_name && service.service_name.toLowerCase().includes(searchInput)) ||
+                (service.service_id && service.service_id.toString().includes(searchInput))
             );
-            displayedCategoriesCount = CATEGORIES_PER_PAGE;
-            isCategoriesExpanded = false;
-            renderCategories(filteredCategoriesData, displayedCategoriesCount);
-        }
-
-        function clearSearch() {
-            const searchInput = document.getElementById("category-search-input");
-            searchInput.value = "";
-            document.getElementById("clear-search").style.display = "none";
-            filteredCategoriesData = [...originalCategoriesData];
-            displayedCategoriesCount = CATEGORIES_PER_PAGE;
-            isCategoriesExpanded = false;
-            renderCategories(filteredCategoriesData, displayedCategoriesCount);
+            displayedServicesCount = SERVICES_PER_PAGE;
+            isServicesExpanded = false;
+            renderTrashServices(filteredTrashServices, displayedServicesCount);
         }
 
         function toggleView() {
-            isCategoriesExpanded = !isCategoriesExpanded;
-            displayedCategoriesCount = isCategoriesExpanded ? filteredCategoriesData.length : CATEGORIES_PER_PAGE;
-            renderCategories(filteredCategoriesData, displayedCategoriesCount);
-            const grid = document.getElementById("categories-grid");
+            isServicesExpanded = !isServicesExpanded;
+            displayedServicesCount = isServicesExpanded ? filteredTrashServices.length : SERVICES_PER_PAGE;
+            renderTrashServices(filteredTrashServices, displayedServicesCount);
+            const grid = document.getElementById("services-grid");
             grid.scrollIntoView({ behavior: "smooth", block: "end" });
         }
 
         document.addEventListener("DOMContentLoaded", () => {
             AOS.init({ duration: 800, once: true });
-            loadTrashCategories();
+            loadTrashServices();
 
-            const searchInput = document.getElementById("category-search-input");
-            searchInput.addEventListener("input", searchCategories);
+            const searchInput = document.getElementById("service-search-input");
+            searchInput.addEventListener("input", searchServices);
         });
     </script>
 </body>
