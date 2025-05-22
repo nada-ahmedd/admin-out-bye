@@ -1,13 +1,15 @@
 const API_BASE_URL = "https://abdulrahmanantar.com/outbye/admin/categories/";
+const TRASH_API_BASE_URL = "https://abdulrahmanantar.com/outbye/admin/trach/categories/";
 const ENDPOINTS = {
     ADD: `${API_BASE_URL}add.php`,
     VIEW: `${API_BASE_URL}view.php`,
     EDIT: `${API_BASE_URL}edit.php`,
-    DELETE: `${API_BASE_URL}delete.php`
+    DELETE: `${API_BASE_URL}delete.php`,
+    TRASH_VIEW: `${TRASH_API_BASE_URL}view.php`
 };
 
-const DEFAULT_IMAGE = 'https://cdn-icons-png.flaticon.com/512/149/149071.png'; // Default avatar
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB in bytes
+const DEFAULT_IMAGE = 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const CORRECT_IMAGE_PATH = 'https://abdulrahmanantar.com/outbye/upload/categories/';
 
 function isLoggedIn() {
@@ -114,10 +116,9 @@ async function searchCategories(query) {
     }
 }
 
-// Function to dynamically load categories into the grid
 function loadCategoriesIntoGrid(categories) {
     const grid = document.getElementById('categories-grid');
-    grid.innerHTML = ''; // Clear existing content
+    grid.innerHTML = '';
 
     if (!categories || categories.length === 0) {
         grid.innerHTML = '<p class="text-center text-muted w-100">No categories found.</p>';
@@ -154,7 +155,6 @@ function loadCategoriesIntoGrid(categories) {
     });
 }
 
-// Function to show category details in a modal
 function showCategoryDetails(id, name, nameAr, image, datetime) {
     let imageSrc = DEFAULT_IMAGE;
     if (image && image !== "null" && image !== "") {
@@ -324,10 +324,10 @@ async function editCategory() {
 async function deleteCategory(id, imageName) {
     const result = await Swal.fire({
         title: 'Are you sure?',
-        text: "This category will be deleted permanently!",
+        text: "This category will be moved to Trash!",
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonText: 'Yes, delete it!',
+        confirmButtonText: 'Yes, move to Trash!',
         cancelButtonText: 'Cancel'
     });
 
@@ -340,13 +340,13 @@ async function deleteCategory(id, imageName) {
     try {
         const data = await fetchWithToken(ENDPOINTS.DELETE, { method: "POST", body: formData });
         if (data.status === "success") {
-            showAlert("success", "Success", data.message || "Category deleted successfully.");
+            showAlert("success", "Success", data.message || "Category moved to Trash successfully.");
             loadCategories();
         } else {
-            showAlert("error", "Error", data.message || "Failed to delete category.");
+            showAlert("error", "Error", data.message || "Failed to move category to Trash.");
         }
     } catch (error) {
-        showAlert("error", "Error", `Failed to delete category: ${error.message}`);
+        showAlert("error", "Error", `Failed to move category to Trash: ${error.message}`);
     }
 }
 

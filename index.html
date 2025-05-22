@@ -514,6 +514,7 @@
             <a class="nav-link" href="users.html"><i class="fas fa-users"></i> Users</a>
             <a class="nav-link" href="offers.html"><i class="fas fa-tags"></i> Offers</a>
             <a class="nav-link" href="feedback.html"><i class="fas fa-star"></i> Feedback</a>
+            <a class="nav-link" href="trash.html"><i class="fas fa-trash"></i> Trash</a>
             <a class="nav-link" href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
         </nav>
     </div>
@@ -552,6 +553,11 @@
                     <h5>Total Items</h5>
                     <p id="items-count">0</p>
                 </div>
+                <div class="card" onclick="window.location.href='trash.html'">
+                    <i class="fas fa-trash"></i>
+                    <h5>Trash Items</h5>
+                    <p id="trash-count">0</p>
+                </div>
                 <div class="card chart-container">
                     <h5>Orders Statistics</h5>
                     <canvas id="ordersChart"></canvas>
@@ -560,7 +566,7 @@
             <div class="section" data-aos="fade-up" data-aos-delay="100">
                 <div class="card">
                     <div class="card-header">
-                        <h5>Recent Updates</h5>
+                        <h5>Categories</h5>
                         <a href="categories.html" class="btn btn-custom">View All</a>
                     </div>
                     <div id="table-spinner" class="spinner-container">
@@ -586,7 +592,7 @@
             <div class="section" data-aos="fade-up" data-aos-delay="200">
                 <div class="card">
                     <div class="card-header">
-                        <h5>Recent Users</h5>
+                        <h5>Users</h5>
                         <a href="users.html" class="btn btn-custom">View All</a>
                     </div>
                     <div id="users-spinner" class="spinner-container">
@@ -685,9 +691,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/spin.js/2.3.2/spin.min.js"></script>
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script src="js/script.js"></script>
-    <script>
-        AOS.init({ duration: 800, once: true });
-    </script>
 </body>
 
 </html>

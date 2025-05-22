@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trash Categories</title>
+    <link rel="icon" href="images/outbye.png?v=1" type="image/png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/spin.js/2.3.2/spin.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <style>
+        :root {
+            --primary: #f26b0a;
+            --secondary: #ff5e62;
+            --dark: #1e2a44;
+            --light: #f7fafc;
+            --text: #333;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            margin: 0;
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 260px;
+            background: var(--dark);
+            color: #fff;
+            padding: 20px;
+            transition: transform 0.3s ease;
+            box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .sidebar .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .sidebar .logo img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid var(--primary);
+        }
+
+        .sidebar .logo h3 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .sidebar .nav-link {
+            color: #d1d5db;
+            padding: 12px 15px;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar .nav-link:hover {
+            background: var(--primary);
+            color: #fff;
+            transform: translateX(5px);
+        }
+
+        .content {
+            margin-left: 260px;
+            padding: 20px;
+            transition: margin-left 0.3s ease;
+        }
+
+        .header {
+            background: #fff;
+            padding: 15px 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .header h1 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin: 0;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            padding: 12px;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 0.9rem;
+        }
+
+        .table th {
+            background: #edf2f7;
+            color: var(--dark);
+            font-weight: 500;
+        }
+
+        .table tr {
+            transition: background 0.3s ease;
+        }
+
+        .table tr:hover td {
+            background: var(--light);
+        }
+
+        .table img {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+
+        .btn-custom {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-custom:hover {
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: linear-gradient(90deg, #dc3545, #ff6b6b);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(90deg, #ff6b6b, #dc3545);
+            transform: translateY(-2px);
+        }
+
+        .spinner-container {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            height: 20px;
+            margin-bottom: 10px;
+        }
+
+        .spinner-active {
+            display: flex;
+        }
+
+        .refresh-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--primary);
+            color: #fff;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .refresh-btn:hover {
+            background: var(--secondary);
+            transform: rotate(360deg);
+        }
+
+        .toggle-sidebar {
+            display: none;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1100;
+            padding: 8px 12px;
+            font-size: 1.2rem;
+            background: var(--primary);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+        }
+
+        .toggle-sidebar:hover {
+            background: var(--secondary);
+        }
+
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 250px;
+                transform: translateX(-250px);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .content {
+                margin-left: 0;
+            }
+
+            .toggle-sidebar {
+                display: block;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .table {
+                font-size: 0.8rem;
+            }
+
+            .btn-custom,
+            .btn-danger {
+                padding: 4px 8px;
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <button class="btn toggle-sidebar" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div class="sidebar" id="sidebar">
+        <div class="logo">
+            <img src="images/outbye.png" alt="Logo">
+            <h3>Admin Dashboard</h3>
+        </div>
+        <nav class="nav flex-column">
+            <a class="nav-link" href="index.html"><i class="fas fa-home"></i> Dashboard</a>
+            <a class="nav-link" href="categories.html"><i class="fas fa-list"></i> Categories</a>
+            <a class="nav-link" href="services.html"><i class="fas fa-cogs"></i> Services</a>
+            <a class="nav-link" href="items.html"><i class="fas fa-box"></i> Items</a>
+            <a class="nav-link" href="pending-orders.html"><i class="fas fa-clock"></i> Pending Orders</a>
+            <a class="nav-link" href="archive-orders.html"><i class="fas fa-archive"></i> Archive Orders</a>
+            <a class="nav-link" href="users.html"><i class="fas fa-users"></i> Users</a>
+            <a class="nav-link" href="offers.html"><i class="fas fa-tags"></i> Offers</a>
+            <a class="nav-link" href="feedback.html"><i class="fas fa-star"></i> Feedback</a>
+            <a class="nav-link" href="trash.html"><i class="fas fa-trash"></i> Trash</a>
+            <a class="nav-link" href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </nav>
+    </div>
+    <div class="content">
+        <div class="container-fluid">
+            <div class="header" data-aos="fade-down">
+                <h1>Deleted Categories</h1>
+                <button class="btn btn-custom" onclick="loadTrashCategories()">Refresh</button>
+            </div>
+            <div class="table-responsive" data-aos="fade-up">
+                <div id="table-spinner" class="spinner-container">
+                    <div class="spinner"></div>
+                </div>
+                <table class="table table-hover table-striped mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Image</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="categories-table"></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="refresh-btn" onclick="loadTrashCategories()">
+            <i class="fas fa-sync-alt"></i>
+        </div>
+    </div>
+    <script>
+        const TRASH_API_BASE_URL = "https://abdulrahmanantar.com/outbye/admin/trach/";
+        const ENDPOINTS = {
+            CATEGORIES_VIEW: `${TRASH_API_BASE_URL}categories/view.php`,
+            CATEGORIES_RESTORE: `${TRASH_API_BASE_URL}categories/restore.php`,
+            CATEGORIES_DELETE: `${TRASH_API_BASE_URL}categories/delete.php`
+        };
+
+        function isLoggedIn() {
+            return localStorage.getItem('isAdminLoggedIn') === 'true' && localStorage.getItem('adminToken');
+        }
+
+        function logout() {
+            localStorage.removeItem('isAdminLoggedIn');
+            localStorage.removeItem('adminId');
+            localStorage.removeItem('adminToken');
+            window.location.href = 'login.html';
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
+        }
+
+        async function fetchWithToken(url, options = {}) {
+            if (!isLoggedIn()) {
+                showAlert("error", "Unauthorized", "Please log in to continue.", () => {
+                    window.location.href = 'login.html';
+                });
+                throw new Error("No token found");
+            }
+
+            const token = localStorage.getItem('adminToken');
+            options.headers = {
+                ...options.headers,
+                'Authorization': `Bearer ${token}`
+            };
+
+            if (!(options.body instanceof FormData)) {
+                options.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+            }
+
+            try {
+                const response = await fetch(url, options);
+                const text = await response.text();
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        showAlert("error", "Session Expired", "Please log in again.", () => {
+                            logout();
+                        });
+                        throw new Error("Unauthorized");
+                    }
+                    console.error("Fetch Error Raw Response:", text);
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                let data;
+                try {
+                    const trimmedText = text.trim();
+                    if (!trimmedText) {
+                        throw new Error("Empty response received");
+                    }
+                    data = JSON.parse(trimmedText);
+                } catch (e) {
+                    console.warn("JSON Parse Error:", e, "Raw Response:", text);
+                    const jsonMatch = text.match(/{[^}]+}/g);
+                    if (jsonMatch) {
+                        for (let jsonStr of jsonMatch) {
+                            try {
+                                data = JSON.parse(jsonStr);
+                                if (data.status) {
+                                    return data;
+                                }
+                            } catch (innerError) {
+                                continue;
+                            }
+                        }
+                    }
+                    throw new Error("Invalid JSON response: " + e.message);
+                }
+                return data;
+            } catch (error) {
+                console.error(`Fetch Error for ${url}:`, error);
+                throw error;
+            }
+        }
+
+        function showAlert(icon, title, text, callback) {
+            Swal.fire({
+                icon,
+                title,
+                text,
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#f26b0a'
+            }).then(() => {
+                if (callback) callback();
+            });
+        }
+
+        async function restoreCategory(categoryId) {
+            if (!isLoggedIn()) {
+                showAlert("error", "Unauthorized", "Please log in to continue.", () => {
+                    window.location.href = 'login.html';
+                });
+                return;
+            }
+
+            if (!categoryId || isNaN(categoryId) || categoryId === "undefined") {
+                showAlert("error", "Error", "Invalid category ID.");
+                return;
+            }
+
+            const confirmed = await Swal.fire({
+                icon: 'warning',
+                title: 'Are you sure?',
+                text: 'This category will be restored.',
+                showCancelButton: true,
+                confirmButtonText: 'Restore',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#f26b0a',
+                cancelButtonColor: '#6c757d'
+            });
+
+            if (!confirmed.isConfirmed) return;
+
+            try {
+                const formData = new FormData();
+                formData.append('id', categoryId);
+                console.log("Restoring category with ID:", categoryId);
+                const response = await fetchWithToken(ENDPOINTS.CATEGORIES_RESTORE, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.status === 'success') {
+                    showAlert('success', 'Restored', response.message || 'Category restored successfully');
+                    loadTrashCategories();
+                } else {
+                    showAlert('error', 'Error', response.message || 'Failed to restore category');
+                }
+            } catch (error) {
+                console.error("Restore Category Error:", error);
+                if (error.message.includes("Invalid JSON response") && error.message.includes("Operation successful")) {
+                    showAlert('success', 'Restored', 'Category restored successfully');
+                    loadTrashCategories();
+                } else {
+                    showAlert('error', 'Error', 'Failed to restore category: ' + error.message);
+                }
+            }
+        }
+
+        async function deleteCategory(categoryId) {
+            if (!isLoggedIn()) {
+                showAlert("error", "Unauthorized", "Please log in to continue.", () => {
+                    window.location.href = 'login.html';
+                });
+                return;
+            }
+
+            if (!categoryId || isNaN(categoryId) || categoryId === "undefined") {
+                showAlert("error", "Error", "Invalid category ID.");
+                return;
+            }
+
+            const { value: credentials } = await Swal.fire({
+                title: 'Delete Category',
+                html: `
+                    <input type="text" id="email" class="swal2-input" placeholder="Email">
+                    <input type="password" id="password" class="swal2-input" placeholder="Password">
+                `,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'Delete',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                preConfirm: () => {
+                    const email = document.getElementById('email').value;
+                    const password = document.getElementById('password').value;
+                    if (!email || !password) {
+                        Swal.showValidationMessage('Email and password are required');
+                        return false;
+                    }
+                    return { email, password };
+                }
+            });
+
+            if (!credentials) return;
+
+            try {
+                const formData = new FormData();
+                formData.append('id', categoryId);
+                formData.append('email', credentials.email);
+                formData.append('password', credentials.password);
+                console.log("Deleting category with ID:", categoryId, "Email:", credentials.email);
+                const response = await fetchWithToken(ENDPOINTS.CATEGORIES_DELETE, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.status === 'success') {
+                    showAlert('success', 'Deleted', response.message || 'Category deleted permanently');
+                    loadTrashCategories();
+                } else {
+                    let errorMessage = response.message || 'Failed to delete category';
+                    if (errorMessage.includes('كلمة المرور غير صحيحة')) {
+                        errorMessage = 'Incorrect password.';
+                    } else if (errorMessage.includes('لم يتم العثور على بيانات الأدمن')) {
+                        errorMessage = 'Admin data not found.';
+                    }
+                    showAlert('error', 'Authentication Error', errorMessage);
+                }
+            } catch (error) {
+                console.error("Delete Category Error:", error);
+                let errorMessage = error.message;
+                if (errorMessage.includes('كلمة المرور غير صحيحة')) {
+                    errorMessage = 'Incorrect password.';
+                } else if (errorMessage.includes('لم يتم العثور على بيانات الأدمن')) {
+                    errorMessage = 'Admin data not found.';
+                } else {
+                    errorMessage = 'Failed to delete category: ' + error.message;
+                }
+                showAlert('error', 'Error', errorMessage);
+            }
+        }
+
+        async function loadTrashCategories() {
+            const tableSpinnerContainer = document.getElementById("table-spinner");
+            if (!tableSpinnerContainer) {
+                console.error("Table spinner container not found");
+                return;
+            }
+
+            tableSpinnerContainer.classList.add("spinner-active");
+            const tableSpinner = new Spinner({ color: '#f26b0a', lines: 12 }).spin(tableSpinnerContainer.querySelector('.spinner'));
+
+            try {
+                const response = await fetchWithToken(ENDPOINTS.CATEGORIES_VIEW, { method: "GET" });
+                const categoriesTable = document.getElementById("categories-table");
+                if (!categoriesTable) {
+                    console.error("Categories table not found");
+                    return;
+                }
+
+                categoriesTable.innerHTML = "";
+                if (response.status === "success" && Array.isArray(response.data)) {
+                    response.data.forEach(category => {
+                        const categoryId = category.categories_id || category.id || '';
+                        if (!categoryId || isNaN(categoryId)) {
+                            console.warn("Invalid category ID for category:", category);
+                            return;
+                        }
+                        categoriesTable.innerHTML += `
+                            <tr>
+                                <td>${categoryId}</td>
+                                <td>${category.categories_name || 'N/A'}</td>
+                                <td><img src="${category.categories_image || 'images/placeholder.png'}" alt="Category Image"></td>
+                                <td>${category.categories_datetime || 'N/A'}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-custom" onclick="restoreCategory(${categoryId})">Restore</button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteCategory(${categoryId})">Delete</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    categoriesTable.innerHTML = '<tr><td colspan="5">No deleted categories found</td></tr>';
+                }
+            } catch (error) {
+                console.error("Load Trash Categories Error:", error);
+                showAlert("error", "Error", "Failed to load deleted categories: " + error.message);
+                const categoriesTable = document.getElementById("categories-table");
+                if (categoriesTable) {
+                    categoriesTable.innerHTML = '<tr><td colspan="5">Error loading data</td></tr>';
+                }
+            } finally {
+                tableSpinner.stop();
+                tableSpinnerContainer.classList.remove("spinner-active");
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            AOS.init({ duration: 800, once: true });
+            loadTrashCategories();
+        });
+    </script>
+</body>
+
+</html>

@@ -1,4 +1,5 @@
 const API_BASE_URL = "https://abdulrahmanantar.com/outbye/admin/";
+const TRASH_API_BASE_URL = "https://abdulrahmanantar.com/outbye/admin/trach/";
 const SEARCH_API_URL = "https://abdulrahmanantar.com/outbye/items/search.php";
 const FEEDBACK_API_URL = "https://abdulrahmanantar.com/outbye/user_review/view.php";
 const DELETE_FEEDBACK_API = "https://abdulrahmanantar.com/outbye/user_review/delete.php";
@@ -13,21 +14,22 @@ const ENDPOINTS = {
     APPROVE: `${API_BASE_URL}orders/approve.php`,
     REJECT: `${API_BASE_URL}orders/reject_order.php`,
     USERS: `${API_BASE_URL}users/view.php`,
-    SEND_NOTIFICATION: `${API_BASE_URL}send_notification_all.php`
+    SEND_NOTIFICATION: `${API_BASE_URL}send_notification_all.php`,
+    TRASH_CATEGORIES: `${TRASH_API_BASE_URL}categories/view.php`,
+    TRASH_SERVICES: `${TRASH_API_BASE_URL}services/view.php`,
+    TRASH_ITEMS: `${TRASH_API_BASE_URL}items/view.php`
 };
 
 const DEFAULT_IMAGE = 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
 let originalFeedbackData = [];
 let ordersChartInstance = null;
 
-// Check if user is logged in
 function isLoggedIn() {
     const isLoggedIn = localStorage.getItem('isAdminLoggedIn') === 'true' && localStorage.getItem('adminToken');
     console.log("Are you logged in?", isLoggedIn, "Token:", localStorage.getItem('adminToken'));
     return isLoggedIn;
 }
 
-// Log out user
 function logout() {
     localStorage.removeItem('isAdminLoggedIn');
     localStorage.removeItem('adminId');
@@ -35,7 +37,6 @@ function logout() {
     window.location.href = 'login.html';
 }
 
-// Toggle sidebar visibility
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     if (sidebar) {
@@ -43,7 +44,6 @@ function toggleSidebar() {
     }
 }
 
-// Fetch data with authorization token
 async function fetchWithToken(url, options = {}) {
     if (!isLoggedIn()) {
         showAlert("error", "Unauthorized", "Please log in to continue", () => {
@@ -58,7 +58,6 @@ async function fetchWithToken(url, options = {}) {
         'Authorization': `Bearer ${token}`
     };
 
-    // Set Content-Type only if not using FormData
     if (!(options.body instanceof FormData)) {
         options.headers['Content-Type'] = 'application/x-www-form-urlencoded';
     }
@@ -105,7 +104,6 @@ async function fetchWithToken(url, options = {}) {
     }
 }
 
-// Show alert using SweetAlert2
 function showAlert(icon, title, text, callback) {
     Swal.fire({
         icon,
@@ -122,7 +120,6 @@ function showAlert(icon, title, text, callback) {
     });
 }
 
-// Delete feedback
 async function deleteFeedback(feedbackId) {
     if (!isLoggedIn()) {
         showAlert("error", "Unauthorized", "Please log in to continue", () => {
@@ -152,7 +149,6 @@ async function deleteFeedback(feedbackId) {
 
         if (response.status === 'success') {
             showAlert('success', 'Deleted', 'Feedback deleted successfully');
-            // Update UI by removing the deleted feedback
             originalFeedbackData = originalFeedbackData.filter(item => item.id !== feedbackId);
             renderFeedback(originalFeedbackData);
         } else {
@@ -164,7 +160,6 @@ async function deleteFeedback(feedbackId) {
     }
 }
 
-// Send notification to all users
 async function sendNotification() {
     const { value: formValues } = await Swal.fire({
         title: 'Send Notification to All Users',
@@ -210,7 +205,6 @@ async function sendNotification() {
     }
 }
 
-// Approve an order
 async function approveOrder(orderId, userId) {
     console.log("Approving order:", { ordersid: orderId, usersid: userId });
     try {
@@ -237,7 +231,6 @@ async function approveOrder(orderId, userId) {
     }
 }
 
-// Reject an order
 async function rejectOrder(orderId, userId) {
     console.log("Rejecting order:", { ordersid: orderId, usersid: userId });
     try {
@@ -264,7 +257,6 @@ async function rejectOrder(orderId, userId) {
     }
 }
 
-// Load overview data
 async function loadOverview() {
     const overviewSpinnerContainer = document.getElementById("overview-spinner");
     if (!overviewSpinnerContainer) {
@@ -306,25 +298,30 @@ async function loadOverview() {
             console.error("Items Error:", e);
         }
 
-        let usersCount = 0;
+        let trashCount = 0;
         try {
-            const usersData = await fetchWithToken(ENDPOINTS.USERS, { method: "GET" });
-            if (usersData.status === "success") {
-                usersCount = usersData.data.length;
-            }
+            const trashCategoriesData = await fetchWithToken(ENDPOINTS.TRASH_CATEGORIES, { method: "GET" });
+            const trashServicesData = await fetchWithToken(ENDPOINTS.TRASH_SERVICES, { method: "GET" });
+            const trashItemsData = await fetchWithToken(ENDPOINTS.TRASH_ITEMS, { method: "GET" });
+
+            const trashCategoriesCount = trashCategoriesData.status === "success" ? trashCategoriesData.data.length : 0;
+            const trashServicesCount = trashServicesData.status === "success" ? trashServicesData.data.length : 0;
+            const trashItemsCount = trashItemsData.status === "success" ? trashItemsData.data.length : 0;
+
+            trashCount = trashCategoriesCount + trashServicesCount + trashItemsCount;
         } catch (e) {
-            console.error("Users Error:", e);
+            console.error("Trash Count Error:", e);
         }
 
         const categoriesCountElement = document.getElementById("categories-count");
         const servicesCountElement = document.getElementById("services-count");
         const itemsCountElement = document.getElementById("items-count");
-        const usersCountElement = document.getElementById("users-count");
+        const trashCountElement = document.getElementById("trash-count");
 
         if (categoriesCountElement) categoriesCountElement.textContent = categoriesCount;
         if (servicesCountElement) servicesCountElement.textContent = servicesCount;
         if (itemsCountElement) itemsCountElement.textContent = itemsCount;
-        if (usersCountElement) usersCountElement.textContent = usersCount;
+        if (trashCountElement) trashCountElement.textContent = trashCount;
     } catch (error) {
         console.error("Overview Error:", error);
         showAlert("error", "Error", "Failed to load overview: " + error.message);
@@ -334,7 +331,6 @@ async function loadOverview() {
     }
 }
 
-// Load orders chart
 async function loadOrdersChart() {
     const canvas = document.getElementById('ordersChart');
     const ctx = canvas?.getContext('2d');
@@ -362,19 +358,16 @@ async function loadOrdersChart() {
 
         let pendingCount = 0, approvedCount = 0, rejectedCount = 0;
 
-        // Count pending orders from ORDERS endpoint
         if (ordersData.status === "success" && Array.isArray(ordersData.data)) {
             pendingCount = ordersData.data.filter(order => order.orders_status == 0).length;
         }
 
-        // Count approved orders from ARCHIVE endpoint
         if (archiveData.status === "success" && Array.isArray(archiveData.data)) {
-            approvedCount = archiveData.data.length; // Assuming all orders in ARCHIVE are approved
+            approvedCount = archiveData.data.length;
         }
 
-        // Count rejected orders from REJECT_ARCHIVE endpoint
         if (rejectArchiveData.status === "success" && Array.isArray(rejectArchiveData.data)) {
-            rejectedCount = rejectArchiveData.data.length; // Assuming all orders in REJECT_ARCHIVE are rejected
+            rejectedCount = rejectArchiveData.data.length;
         }
 
         ordersChartInstance = new Chart(ctx, {
@@ -412,7 +405,6 @@ async function loadOrdersChart() {
     }
 }
 
-// Search across all entities
 async function searchAll(query) {
     try {
         const formData = new FormData();
@@ -444,7 +436,6 @@ async function searchAll(query) {
     }
 }
 
-// Load recent updates
 async function loadRecentUpdates(searchData = null) {
     const tableSpinnerContainer = document.getElementById("table-spinner");
     if (!tableSpinnerContainer) {
@@ -565,7 +556,6 @@ async function loadRecentUpdates(searchData = null) {
     }
 }
 
-// Load recent users
 async function loadRecentUsers(searchData = null) {
     const usersSpinnerContainer = document.getElementById("users-spinner");
     if (!usersSpinnerContainer) {
@@ -622,7 +612,6 @@ async function loadRecentUsers(searchData = null) {
     }
 }
 
-// Load pending orders
 async function loadPendingOrders(searchData = null) {
     const ordersSpinnerContainer = document.getElementById("orders-spinner");
     if (!ordersSpinnerContainer) {
@@ -682,7 +671,6 @@ async function loadPendingOrders(searchData = null) {
     }
 }
 
-// Load archived orders
 async function loadArchivedOrders(searchData = null) {
     const archiveSpinnerContainer = document.getElementById("archive-spinner");
     if (!archiveSpinnerContainer) {
@@ -704,7 +692,7 @@ async function loadArchivedOrders(searchData = null) {
             try {
                 const archiveResponse = await fetchWithToken(ENDPOINTS.ARCHIVE, { method: "GET" });
                 if (archiveResponse.status === "success") {
-                    archiveData = archiveResponse.data.map(order => ({ ...order, orders_status: 2 })); // Mark as approved
+                    archiveData = archiveResponse.data.map(order => ({ ...order, orders_status: 2 }));
                 }
             } catch (e) {
                 console.error("Archive Error:", e);
@@ -713,14 +701,13 @@ async function loadArchivedOrders(searchData = null) {
             try {
                 const rejectResponse = await fetchWithToken(ENDPOINTS.REJECT_ARCHIVE, { method: "GET" });
                 if (rejectResponse.status === "success") {
-                    rejectArchiveData = rejectResponse.data.map(order => ({ ...order, orders_status: 1 })); // Mark as rejected
+                    rejectArchiveData = rejectResponse.data.map(order => ({ ...order, orders_status: 1 }));
                 }
             } catch (e) {
                 console.error("Reject Archive Error:", e);
             }
         }
 
-        // Combine and sort archived orders (approved and rejected)
         const combinedArchiveData = [...archiveData, ...rejectArchiveData]
             .sort((a, b) => new Date(b.orders_datetime) - new Date(a.orders_datetime))
             .slice(0, 5);
@@ -757,7 +744,6 @@ async function loadArchivedOrders(searchData = null) {
     }
 }
 
-// Render feedback data as cards
 function renderFeedback(feedback) {
     const feedbackGrid = document.getElementById("feedback-table");
     if (!feedbackGrid) {
@@ -793,7 +779,6 @@ function renderFeedback(feedback) {
     });
 }
 
-// Clear search input
 function clearSearch() {
     const searchInput = document.getElementById("global-search-input");
     const clearSearchBtn = document.getElementById("clear-search");
@@ -804,7 +789,6 @@ function clearSearch() {
     }
 }
 
-// Search feedback data
 function searchFeedback() {
     const searchInput = document.getElementById("global-search-input");
     if (!searchInput) {
@@ -831,7 +815,6 @@ function searchFeedback() {
     renderFeedback(filteredFeedback);
 }
 
-// Load feedback data
 async function loadFeedback() {
     const feedbackSkeleton = document.getElementById("feedback-skeleton");
     if (!feedbackSkeleton) {
@@ -863,7 +846,6 @@ async function loadFeedback() {
     }
 }
 
-// Load dashboard data
 async function loadDashboard(searchQuery = "") {
     if (!isLoggedIn()) {
         showAlert("error", "Unauthorized", "Please log in to continue", () => {
@@ -890,7 +872,6 @@ async function loadDashboard(searchQuery = "") {
     });
 }
 
-// Handle search input
 function handleSearch() {
     const searchQuery = document.getElementById("global-search-input")?.value.trim();
     loadDashboard(searchQuery);
@@ -900,8 +881,9 @@ function handleSearch() {
     }
 }
 
-// Initialize page
 document.addEventListener("DOMContentLoaded", () => {
+    AOS.init({ duration: 800, once: true });
+
     const currentPage = window.location.pathname.split('/').pop();
     if (currentPage === 'feedback.html') {
         loadFeedback();
