@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self' https://abdulrahmanantar.com; style-src 'self' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com 'unsafe-inline'; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com; script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com 'unsafe-inline'; img-src 'self' https://abdulrahmanantar.com https://placehold.co https://cdn-icons-png.flaticon.com data:;">
+    <title>Trash Offers</title>
+    <link rel="icon" href="images/outbye.png?v=1" type="image/png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/spin.js/2.3.2/spin.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <style>
+        :root {
+            --primary: #f26b0a;
+            --secondary: #ff8c00;
+            --dark: #2b2d42;
+            --light: #f8fafc;
+            --text: #2d3748;
+            --card-bg: #ffffff;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --background-start: #f7fafc;
+            --background-end: #dfe6e9;
+            --hover-bg: #fef3e7;
+            --active-bg: #e65b00;
+            --border-color: #e2e8f0;
+            --action-view: #ff8c00;
+            --action-edit: #e85c00;
+            --action-delete: #e63946;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--background-start) 0%, var(--background-end) 100%);
+            min-height: 100vh;
+            margin: 0;
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 260px;
+            background: var(--dark);
+            color: #fff;
+            padding: 30px 20px;
+            transition: transform 0.3s ease;
+            box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .sidebar .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .sidebar .logo img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid var(--primary);
+        }
+
+        .sidebar .logo h3 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .sidebar .nav-link {
+            color: #d1d5db;
+            padding: 12px 15px;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar .nav-link:hover {
+            background: var(--primary);
+            color: #fff;
+            transform: translateX(5px);
+        }
+
+        .content {
+            margin-left: 260px;
+            padding: 30px;
+            transition: margin-left 0.3s ease;
+            scroll-behavior: smooth;
+        }
+
+        .header {
+            background: var(--card-bg);
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .header h1 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin: 0;
+        }
+
+        .header .actions-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header .search-container {
+            display: flex;
+            align-items: center;
+            position: relative;
+            max-width: 350px;
+            width: 100%;
+        }
+
+        .header .search-container input {
+            width: 100%;
+            padding: 10px 40px;
+            border: 1px solid var(--border-color);
+            border-radius: 25px;
+            font-size: 0.9rem;
+            background: var(--light);
+            transition: all 0.3s ease;
+        }
+
+        .header .search-container input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 8px rgba(242, 107, 10, 0.2);
+        }
+
+        .header .search-container .search-icon {
+            position: absolute;
+            left: 15px;
+            color: #718096;
+            font-size: 0.9rem;
+        }
+
+        .header .search-container .clear-search {
+            position: absolute;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #718096;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: none;
+            transition: color 0.3s ease;
+        }
+
+        .header .search-container .clear-search:hover {
+            color: var(--primary);
+        }
+
+        .btn-custom {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-custom:hover {
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 15px 0;
+            transition: opacity 0.3s ease;
+        }
+
+        @media (min-width: 1200px) {
+            .services-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .service-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 20px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .service-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            background: var(--hover-bg);
+        }
+
+        .service-card img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .service-card h5 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .service-card .service-info {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .service-card .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .btn-action {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            color: #fff;
+            position: relative;
+        }
+
+        .btn-action[data-tooltip]:hover:after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--dark);
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            z-index: 10;
+        }
+
+        .btn-restore {
+            background: var(--action-view);
+        }
+
+        .btn-restore:hover {
+            background: #e07b00;
+        }
+
+        .btn-delete {
+            background: var(--action-delete);
+        }
+
+        .btn-delete:hover {
+            background: #d32f3c;
+        }
+
+        .btn-show-more {
+            background: none;
+            border: none;
+            color: var(--primary);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .btn-show-more:hover {
+            color: var(--secondary);
+        }
+
+        .view-more-container {
+            text-align: center;
+            margin: 20px 0;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .btn-toggle-view {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-toggle-view:hover {
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-toggle-view.pulse {
+            animation: pulse 0.5s ease;
+        }
+
+        .btn-toggle-view i {
+            transition: transform 0.3s ease;
+        }
+
+        .btn-toggle-view.view-less i {
+            transform: rotate(180deg);
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .section-header {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin: 30px 0 15px;
+            position: relative;
+            padding-bottom: 8px;
+        }
+
+        .section-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 50px;
+            height: 3px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        .spinner-container {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            height: 40px;
+            margin: 20px 0;
+        }
+
+        .spinner-active {
+            display: flex;
+        }
+
+        .toggle-sidebar {
+            display: none;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1100;
+            padding: 6px 10px;
+            font-size: 0.9rem;
+            background: var(--primary);
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            transition: background 0.3s ease;
+        }
+
+        .toggle-sidebar:hover {
+            background: var(--secondary);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 260px;
+                transform: translateX(-260px);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .content {
+                margin-left: 0;
+                padding: 15px;
+            }
+
+            .toggle-sidebar {
+                display: block;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+                padding: 12px 15px;
+            }
+
+            .header .actions-container {
+                width: 100%;
+                flex-wrap: wrap;
+                justify-content: space-between;
+            }
+
+            .header .search-container {
+                max-width: 100%;
+            }
+
+            .services-grid {
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            }
+        }
+
+        @media (max-width: 576px) {
+            .sidebar {
+                width: 220px;
+                transform: translateX(-220px);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .content {
+                padding: 10px;
+            }
+
+            .services-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.3rem;
+            }
+
+            .header .search-container input {
+                font-size: 0.85rem;
+                padding: 8px 35px;
+            }
+
+            .header .search-container .search-icon,
+            .header .search-container .clear-search {
+                font-size: 0.85rem;
+            }
+
+            .service-card {
+                padding: 12px;
+            }
+
+            .service-card h5 {
+                font-size: 1rem;
+            }
+
+            .service-card .service-info {
+                font-size: 0.8rem;
+            }
+
+            .btn-action {
+                padding: 5px 10px;
+                font-size: 0.8rem;
+            }
+
+            .btn-show-more {
+                font-size: 0.8rem;
+            }
+
+            .section-header {
+                font-size: 1.2rem;
+            }
+
+            .btn-toggle-view {
+                padding: 8px 16px;
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <button class="btn toggle-sidebar" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div class="sidebar" id="sidebar">
+        <div class="logo">
+            <img src="images/outbye.png" alt="Logo">
+            <h3>Admin Dashboard</h3>
+        </div>
+        <nav class="nav flex-column">
+            <a class="nav-link" href="index.html"><i class="fas fa-home"></i> Dashboard</a>
+            <a class="nav-link" href="categories.html"><i class="fas fa-list"></i> Categories</a>
+            <a class="nav-link" href="services.html"><i class="fas fa-cogs"></i> Services</a>
+            <a class="nav-link" href="items.html"><i class="fas fa-box"></i> Items</a>
+            <a class="nav-link" href="pending-orders.html"><i class="fas fa-clock"></i> Pending Orders</a>
+            <a class="nav-link" href="archive-orders.html"><i class="fas fa-archive"></i> Archive Orders</a>
+            <a class="nav-link" href="users.html"><i class="fas fa-users"></i> Users</a>
+            <a class="nav-link" href="offers.html"><i class="fas fa-tags"></i> Offers</a>
+            <a class="nav-link" href="feedback.html"><i class="fas fa-star"></i> Feedback</a>
+            <a class="nav-link" href="trash.html"><i class="fas fa-trash"></i> Trash</a>
+            <a class="nav-link" href="trash-offers.html"><i class="fas fa-tags"></i> Trash Offers</a>
+            <a class="nav-link" href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </nav>
+    </div>
+    <div class="content">
+        <div class="container-fluid">
+            <div class="header" data-aos="fade-down">
+                <h1>Deleted Offers</h1>
+                <div class="actions-container">
+                    <div class="search-container">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="offer-search-input" placeholder="Search offers...">
+                        <button id="clear-search" class="clear-search" onclick="clearSearch()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <button class="btn btn-custom" onclick="loadTrashOffers()">
+                        <i class="fas fa-sync me-1"></i> Refresh
+                    </button>
+                </div>
+            </div>
+            <h2 class="section-header">Deleted Offers List</h2>
+            <div class="services-grid" id="offers-grid"></div>
+            <div id="offers-view-more" class="view-more-container" style="display: none;">
+                <button class="btn-toggle-view" id="offers-toggle-btn" onclick="toggleView()">
+                    <span>View More</span>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+            </div>
+            <div id="table-spinner" class="spinner-container"></div>
+        </div>
+    </div>
+    <script>
+    const TRASH_API_BASE_URL = "https://abdulrahmanantar.com/outbye/admin/trach/offers/";
+        const ENDPOINTS = {
+            OFFERS_VIEW: `${TRASH_API_BASE_URL}view.php`,
+            OFFERS_RESTORE: `${TRASH_API_BASE_URL}restore.php`,
+            OFFERS_DELETE: `${TRASH_API_BASE_URL}delete.php`
+        };
+
+        const DEFAULT_IMAGE = 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+        let originalTrashOffers = [];
+        let filteredTrashOffers = [];
+        let displayedOffersCount = 10;
+        let isOffersExpanded = false;
+        const OFFERS_PER_PAGE = 10;
+
+        function isLoggedIn() {
+            return localStorage.getItem('isAdminLoggedIn') === 'true' && localStorage.getItem('adminToken');
+        }
+
+        function logout() {
+            localStorage.removeItem('isAdminLoggedIn');
+            localStorage.removeItem('adminId');
+            localStorage.removeItem('adminToken');
+            window.location.href = 'login.html';
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
+        }
+
+        async function fetchWithToken(url, options = {}) {
+            if (!isLoggedIn()) {
+                showAlert("error", "Unauthorized", "Please log in to continue.", () => {
+                    window.location.href = 'login.html';
+                });
+                throw new Error("No token found");
+            }
+
+            const token = localStorage.getItem('adminToken');
+            options.headers = {
+                ...options.headers,
+                'Authorization': `Bearer ${token}`
+            };
+
+            if (!(options.body instanceof FormData)) {
+                options.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+                if (typeof options.body === 'object') {
+                    options.body = new URLSearchParams(options.body).toString();
+                }
+            }
+
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        showAlert("error", "Session Expired", "Please log in again.", () => {
+                            logout();
+                        });
+                        throw new Error("Unauthorized");
+                    }
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const text = await response.text();
+                let data;
+                try {
+                    const trimmedText = text.trim();
+                    if (!trimmedText) {
+                        throw new Error("Empty response received");
+                    }
+                    data = JSON.parse(trimmedText);
+                } catch (e) {
+                    console.error("JSON Parse Error:", e, "Raw:", text);
+                    if (text.includes('"status":"success"')) {
+                        return { status: "success", message: "Operation completed successfully (parsed from raw response)" };
+                    }
+                    throw new Error("Invalid JSON response: " + e.message);
+                }
+                return data;
+            } catch (error) {
+                console.error(`Fetch Error for ${url}:`, error);
+                throw error;
+            }
+        }
+
+        function showAlert(icon, title, text, callback) {
+            Swal.fire({
+                icon,
+                title,
+                text,
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#f26b0a'
+            }).then(() => {
+                if (callback) callback();
+            });
+        }
+
+        async function loadTrashOffers() {
+            if (!isLoggedIn()) {
+                showAlert("error", "Unauthorized", "Please log in to continue.", () => {
+                    window.location.href = 'login.html';
+                });
+                return;
+            }
+
+            const tableSpinnerContainer = document.getElementById("table-spinner");
+            if (!tableSpinnerContainer) {
+                console.error("Table spinner container not found");
+                return;
+            }
+
+            tableSpinnerContainer.classList.add("spinner-active");
+            const tableSpinner = new Spinner({ color: '#f26b0a', lines: 12 }).spin(tableSpinnerContainer);
+
+            try {
+                const response = await fetchWithToken(ENDPOINTS.OFFERS_VIEW, { method: "GET" });
+                tableSpinnerContainer.classList.remove("spinner-active");
+                tableSpinner.stop();
+
+                if (response && response.status === "success" && Array.isArray(response.data)) {
+                    originalTrashOffers = response.data;
+                    filteredTrashOffers = [...originalTrashOffers];
+                    renderTrashOffers(filteredTrashOffers, displayedOffersCount);
+                } else {
+                    console.warn("Invalid response format, using empty data:", response);
+                    originalTrashOffers = [];
+                    filteredTrashOffers = [];
+                    renderTrashOffers([]);
+                }
+            } catch (error) {
+                tableSpinnerContainer.classList.remove("spinner-active");
+                tableSpinner.stop();
+                showAlert("error", "Error", `Failed to load trash offers: ${error.message}`);
+                renderTrashOffers([]);
+            }
+        }
+
+        function renderTrashOffers(offers, limit = displayedOffersCount) {
+            const grid = document.getElementById("offers-grid");
+            grid.innerHTML = '';
+
+            if (!offers || offers.length === 0) {
+                grid.innerHTML = '<p class="text-center text-muted w-100">No deleted offers found.</p>';
+                document.getElementById("offers-view-more").style.display = "none";
+                return;
+            }
+
+            const offersToShow = offers.slice(0, limit);
+            offersToShow.forEach(offer => {
+                const imageSrc = offer.image && offer.image !== "null" && offer.image !== ""
+                    ? offer.image
+                    : DEFAULT_IMAGE;
+
+                const card = `
+            <div class="service-card">
+                <img src="${imageSrc}" alt="Offer Image" onerror="this.src='${DEFAULT_IMAGE}'">
+                <h5>Offer #${offer.id}</h5>
+                <div class="service-info">Name: ${offer.title || 'N/A'}</div>
+                <div class="service-info">Price: ${offer.price || 'N/A'}</div>
+                <div class="service-info">Start Date: ${offer.start_date || 'N/A'}</div>
+                <div class="actions">
+                    <div>
+                        <button class="btn btn-action btn-restore" data-tooltip="Restore offer" onclick="restoreOffer('${offer.id}', '${offer.title}')">Restore</button>
+                        <button class="btn btn-action btn-delete" data-tooltip="Permanently delete" onclick="permanentlyDeleteOffer('${offer.id}', '${offer.image}', '${offer.title}')">Delete</button>
+                    </div>
+                    <button class="btn-show-more" onclick="showOfferDetails('${offer.id}', '${offer.title}', '${offer.description}', '${imageSrc}', '${offer.price}', '${offer.start_date}', '${offer.end_date}', '${offer.created_at}', '${offer.updated_at}', '${offer.service_id}', '${offer.is_deleted}')">Show More</button>
+                </div>
+            </div>
+        `;
+                grid.innerHTML += card;
+            });
+
+            const viewMoreContainer = document.getElementById("offers-view-more");
+            const toggleBtn = document.getElementById("offers-toggle-btn");
+            const toggleBtnText = toggleBtn.querySelector('span');
+            const toggleBtnIcon = toggleBtn.querySelector('i');
+
+            if (offers.length > OFFERS_PER_PAGE) {
+                viewMoreContainer.style.display = "block";
+                if (isOffersExpanded) {
+                    toggleBtnText.textContent = "View Less";
+                    toggleBtn.classList.add("view-less");
+                    toggleBtnIcon.classList.replace("fa-chevron-down", "fa-chevron-up");
+                } else {
+                    toggleBtnText.textContent = "View More";
+                    toggleBtn.classList.remove("view-less");
+                    toggleBtnIcon.classList.replace("fa-chevron-up", "fa-chevron-down");
+                }
+                toggleBtn.classList.add("pulse");
+                setTimeout(() => toggleBtn.classList.remove("pulse"), 500);
+            } else {
+                viewMoreContainer.style.display = "none";
+            }
+        }
+
+        function showOfferDetails(id, title, description, image, price, start_date, end_date, created_at, updated_at, service_id, is_deleted) {
+            const imageSrc = image || DEFAULT_IMAGE;
+            const deletedStatus = is_deleted === "1" ? "Yes" : "No";
+            Swal.fire({
+                title: `Offer: ${title || 'N/A'}`,
+                html: `
+            <div style="text-align: center;">
+                <img src="${imageSrc}" alt="${title}" style="width: 100%; max-width: 200px; border-radius: 8px; margin-bottom: 15px;">
+                <div style="text-align: left; font-size: 0.9rem; line-height: 1.5;">
+                    <p><strong>ID:</strong> ${id}</p>
+                    <p><strong>Title:</strong> ${title || 'N/A'}</p>
+                    <p><strong>Description:</strong> ${description || 'N/A'}</p>
+                    <p><strong>Price:</strong> ${price || 'N/A'}</p>
+                    <p><strong>Start Date:</strong> ${start_date || 'N/A'}</p>
+                    <p><strong>End Date:</strong> ${end_date || 'N/A'}</p>
+                    <p><strong>Created At:</strong> ${created_at || 'N/A'}</p>
+                    <p><strong>Updated At:</strong> ${updated_at || 'N/A'}</p>
+                    <p><strong>Service ID:</strong> ${service_id || 'N/A'}</p>
+                    <p><strong>Deleted:</strong> ${deletedStatus}</p>
+                </div>
+            </div>
+        `,
+                confirmButtonText: 'Close',
+                confirmButtonColor: '#f26b0a'
+            });
+        }
+
+        async function restoreOffer(id, title) {
+            const result = await Swal.fire({
+                title: 'Are you sure?',
+                text: `This offer "${title || 'N/A'}" will be restored!`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, restore it!',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#f26b0a',
+                cancelButtonColor: '#6c757d'
+            });
+
+            if (!result.isConfirmed) return;
+
+            const formData = new FormData();
+            formData.append("id", id);
+
+            try {
+                const data = await fetchWithToken(ENDPOINTS.OFFERS_RESTORE, { method: "POST", body: formData });
+                if (data.status === "success") {
+                    showAlert("success", "Success", data.message || "Offer restored successfully.");
+                    loadTrashOffers();
+                } else {
+                    showAlert("error", "Error", data.message || "Failed to restore offer.");
+                }
+            } catch (error) {
+                showAlert("error", "Error", `Failed to restore offer: ${error.message}`);
+            }
+        }
+
+        async function permanentlyDeleteOffer(id, imageName, title) {
+            const { value: formValues } = await Swal.fire({
+                title: 'Confirm Permanent Deletion',
+                html: `
+            <p>Are you sure you want to permanently delete "${title || 'N/A'}"?</p>
+            <input id="swal-email" class="swal2-input" placeholder="Email" type="email">
+            <input id="swal-password" class="swal2-input" placeholder="Password" type="password">
+        `,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#f26b0a',
+                cancelButtonColor: '#6c757d',
+                preConfirm: () => {
+                    const email = document.getElementById('swal-email').value;
+                    const password = document.getElementById('swal-password').value;
+                    if (!email || !password) {
+                        Swal.showValidationMessage('Email and password are required');
+                        return false;
+                    }
+                    return { email, password };
+                }
+            });
+
+            if (!formValues) return;
+
+            const { email, password } = formValues;
+            if (!email || !password) {
+                showAlert("error", "Error", "Email and password are required.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("id", id);
+            formData.append("imagename", imageName || "");
+            formData.append("email", email);
+            formData.append("password", password);
+
+            try {
+                const data = await fetchWithToken(ENDPOINTS.OFFERS_DELETE, { method: "POST", body: formData });
+                if (data.status === "success") {
+                    showAlert("success", "Success", data.message || "Offer permanently deleted successfully.");
+                    loadTrashOffers();
+                } else {
+                    let errorMessage = data.message || "Failed to permanently delete offer.";
+                    showAlert("error", "Error", errorMessage);
+                }
+            } catch (error) {
+                showAlert("error", "Error", `Failed to permanently delete offer: ${error.message}`);
+            }
+        }
+
+        function clearSearch() {
+            const searchInput = document.getElementById("offer-search-input");
+            searchInput.value = "";
+            document.getElementById("clear-search").style.display = "none";
+            filteredTrashOffers = [...originalTrashOffers];
+            displayedOffersCount = OFFERS_PER_PAGE;
+            isOffersExpanded = false;
+            renderTrashOffers(filteredTrashOffers, displayedOffersCount);
+        }
+
+        function searchOffers() {
+            const searchInput = document.getElementById("offer-search-input").value.trim().toLowerCase();
+            const clearSearchBtn = document.getElementById("clear-search");
+            clearSearchBtn.style.display = searchInput ? "block" : "none";
+
+            if (!searchInput) {
+                filteredTrashOffers = [...originalTrashOffers];
+                displayedOffersCount = OFFERS_PER_PAGE;
+                isOffersExpanded = false;
+                renderTrashOffers(filteredTrashOffers, displayedOffersCount);
+                return;
+            }
+
+            filteredTrashOffers = originalTrashOffers.filter(offer =>
+                (offer.title && offer.title.toLowerCase().includes(searchInput)) ||
+                (offer.id && offer.id.toString().includes(searchInput))
+            );
+            displayedOffersCount = OFFERS_PER_PAGE;
+            isOffersExpanded = false;
+            renderTrashOffers(filteredTrashOffers, displayedOffersCount);
+        }
+
+        function toggleView() {
+            isOffersExpanded = !isOffersExpanded;
+            displayedOffersCount = isOffersExpanded ? filteredTrashOffers.length : OFFERS_PER_PAGE;
+            renderTrashOffers(filteredTrashOffers, displayedOffersCount);
+            const grid = document.getElementById("offers-grid");
+            grid.scrollIntoView({ behavior: "smooth", block: "end" });
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            AOS.init({ duration: 800, once: true });
+            loadTrashOffers();
+
+            const searchInput = document.getElementById("offer-search-input");
+            searchInput.addEventListener("input", searchOffers);
+        });
+    </script>
+</body>
+
+</html>

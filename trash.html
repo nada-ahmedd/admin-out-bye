@@ -256,6 +256,11 @@
                     <h5>Deleted Items</h5>
                     <p id="trash-items-count">0</p>
                 </div>
+                <div class="card" onclick="window.location.href='trash-offers.html'">
+                    <i class="fas fa-tags"></i>
+                    <h5>Deleted Offers</h5>
+                    <p id="trash-offers-count">0</p>
+                </div>
             </div>
         </div>
     </div>
@@ -264,7 +269,8 @@
         const ENDPOINTS = {
             CATEGORIES_VIEW: `${TRASH_API_BASE_URL}categories/view.php`,
             SERVICES_VIEW: `${TRASH_API_BASE_URL}services/view.php`,
-            ITEMS_VIEW: `${TRASH_API_BASE_URL}items/view.php`
+            ITEMS_VIEW: `${TRASH_API_BASE_URL}items/view.php`,
+            OFFERS_VIEW: `${TRASH_API_BASE_URL}offers/view.php`
         };
 
         function isLoggedIn() {
@@ -323,7 +329,7 @@
                 } catch (e) {
                     console.error("JSON Parse Error:", e, "Raw:", text);
                     if (text.includes('"status":"success"')) {
-                        return { status: "success" };
+                        return { status: true };
                     }
                     throw new Error("Invalid JSON response");
                 }
@@ -386,13 +392,25 @@
                     console.error("Trash Items Error:", e);
                 }
 
+                let offersCount = 0;
+                try {
+                    const offersData = await fetchWithToken(ENDPOINTS.OFFERS_VIEW, { method: "GET" });
+                    if (offersData.status === "success") {
+                        offersCount = offersData.data.length;
+                    }
+                } catch (e) {
+                    console.error("Trash Offers Error:", e);
+                }
+
                 const categoriesCountElement = document.getElementById("trash-categories-count");
                 const servicesCountElement = document.getElementById("trash-services-count");
                 const itemsCountElement = document.getElementById("trash-items-count");
+                const offersCountElement = document.getElementById("trash-offers-count");
 
                 if (categoriesCountElement) categoriesCountElement.textContent = categoriesCount;
                 if (servicesCountElement) servicesCountElement.textContent = servicesCount;
                 if (itemsCountElement) itemsCountElement.textContent = itemsCount;
+                if (offersCountElement) offersCountElement.textContent = offersCount;
             } catch (error) {
                 console.error("Trash Overview Error:", error);
                 showAlert("error", "Error", "Failed to load trash overview: " + error.message);
