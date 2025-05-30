@@ -88,15 +88,16 @@ function renderArchive(archiveOrders, limit = displayedArchiveCount) {
 
     const ordersToShow = archiveOrders.slice(0, limit);
     ordersToShow.forEach(order => {
-        const address = order.address_name ? `${order.address_name}, ${order.address_street}, ${order.address_city}` : "No address";
+        const orderType = order.orders_type == 0 ? "Delivery" : "Takeaway";
         const card = `
             <div class="order-card">
                 <h5>Order #${order.orders_id}</h5>
                 <div class="order-info">User ID: ${order.orders_usersid}</div>
-                <div class="order-info">Address: ${address}</div>
+                <div class="order-info">User Name: ${order.users_name || "N/A"}</div>
+                <div class="order-info">Type: ${orderType}</div>
                 <div class="order-info">Total: ${order.orders_totalprice || 0}</div>
                 <div class="actions">
-                    <button class="btn btn-action btn-details" data-tooltip="View order details" onclick="showOrderDetails('Approved', ${order.orders_id}, '${order.orders_usersid}', '${address}', '${order.orders_type}', '${order.orders_price}', '${order.orders_pricedelivery}', '${order.orders_totalprice}', '${order.orders_coupon}', '${order.orders_paymentmethod}', '${order.orders_datetime}', '${order.orders_rating}', '${order.orders_noterating}')">Show Details</button>
+                    <button class="btn btn-action btn-details" data-tooltip="View order details" onclick="showOrderDetails('Approved', ${order.orders_id}, ${order.orders_usersid}, ${order.orders_address}, ${order.orders_type}, ${order.orders_pricedelivery || 0}, ${order.orders_price || 0}, ${order.orders_totalprice || 0}, ${order.orders_coupon || 0}, ${order.orders_rating || 0}, '${order.orders_noterating || ''}', ${order.orders_paymentmethod || 0}, ${order.orders_status || 0}, '${order.orders_datetime}', ${order.address_id || 0}, ${order.address_usersid || 0}, '${order.address_name || ''}', '${order.address_phone || ''}', '${order.address_city || ''}', '${order.address_street || ''}', ${order.address_lat || 0}, ${order.address_long || 0}, '${order.users_name || ''}')">Show Details</button>
                 </div>
             </div>
         `;
@@ -139,15 +140,16 @@ function renderRejected(rejectedOrders, limit = displayedRejectCount) {
 
     const ordersToShow = rejectedOrders.slice(0, limit);
     ordersToShow.forEach(order => {
-        const address = order.address_name ? `${order.address_name}, ${order.address_street}, ${order.address_city}` : "No address";
+        const orderType = order.orders_type == 0 ? "Delivery" : "Takeaway";
         const card = `
             <div class="order-card">
                 <h5>Order #${order.orders_id}</h5>
                 <div class="order-info">User ID: ${order.orders_usersid}</div>
-                <div class="order-info">Address: ${address}</div>
+                <div class="order-info">User Name: ${order.users_name || "N/A"}</div>
+                <div class="order-info">Type: ${orderType}</div>
                 <div class="order-info">Total: ${order.orders_totalprice || 0}</div>
                 <div class="actions">
-                    <button class="btn btn-action btn-details" data-tooltip="View order details" onclick="showOrderDetails('Rejected', ${order.orders_id}, '${order.orders_usersid}', '${address}', '${order.orders_type}', '${order.orders_price}', '${order.orders_pricedelivery}', '${order.orders_totalprice}', '${order.orders_coupon}', '${order.orders_paymentmethod}', '${order.orders_datetime}')">Show Details</button>
+                    <button class="btn btn-action btn-details" data-tooltip="View order details" onclick="showOrderDetails('Rejected', ${order.orders_id}, ${order.orders_usersid}, ${order.orders_address}, ${order.orders_type}, ${order.orders_pricedelivery || 0}, ${order.orders_price || 0}, ${order.orders_totalprice || 0}, ${order.orders_coupon || 0}, ${order.orders_rating || 0}, '${order.orders_noterating || ''}', ${order.orders_paymentmethod || 0}, ${order.orders_status || 0}, '${order.orders_datetime}', ${order.address_id || 0}, ${order.address_usersid || 0}, '${order.address_name || ''}', '${order.address_phone || ''}', '${order.address_city || ''}', '${order.address_street || ''}', ${order.address_lat || 0}, ${order.address_long || 0}, '${order.users_name || ''}')">Show Details</button>
                 </div>
             </div>
         `;
@@ -196,22 +198,38 @@ function toggleView(type) {
     }
 }
 
-function showOrderDetails(type, id, userId, address, orderType, price, deliveryPrice, totalPrice, coupon, paymentMethod, datetime, rating = null, noteRating = null) {
+function showOrderDetails(type, id, userId, addressId, orderType, deliveryPrice, price, totalPrice, coupon, rating, noteRating, paymentMethod, status, datetime, addrId, addrUserId, addrName, addrPhone, addrCity, addrStreet, addrLat, addrLong, userName) {
+    const orderTypeText = orderType == 0 ? "Delivery" : "Takeaway";
+    const couponStatus = coupon == 1 ? "Yes" : "No";
+    const payment = paymentMethod == 0 ? "Cash" : "Other";
+    const orderStatus = status == 0 ? "Pending" : (status == 1 ? "Approved" : "Rejected");
+
     const detailsHtml = `
         <div style="text-align: center;">
             <h5 style="font-size: 1.2rem; margin-bottom: 15px;">${type} Order #${id}</h5>
             <div style="text-align: left; font-size: 0.9rem; line-height: 1.5;">
+                <p><strong>Order ID:</strong> ${id}</p>
                 <p><strong>User ID:</strong> ${userId}</p>
-                <p><strong>Address:</strong> ${address}</p>
-                <p><strong>Type:</strong> ${orderType == 0 ? "Delivery" : "Takeaway"}</p>
-                <p><strong>Price:</strong> ${price || 0}</p>
-                <p><strong>Delivery Price:</strong> ${deliveryPrice || 0}</p>
-                <p><strong>Total Price:</strong> ${totalPrice || 0}</p>
-                <p><strong>Coupon:</strong> ${coupon == 1 ? "Yes" : "No"}</p>
-                <p><strong>Payment Method:</strong> ${paymentMethod == 0 ? "Cash" : "Other"}</p>
+                <p><strong>User Name:</strong> ${userName || "N/A"}</p>
+                <p><strong>Address ID:</strong> ${addressId}</p>
+                <p><strong>Type:</strong> ${orderTypeText}</p>
+                <p><strong>Delivery Price:</strong> ${deliveryPrice}</p>
+                <p><strong>Price:</strong> ${price}</p>
+                <p><strong>Total Price:</strong> ${totalPrice}</p>
+                <p><strong>Coupon:</strong> ${couponStatus}</p>
+                <p><strong>Rating:</strong> ${rating || "Not rated"}</p>
+                <p><strong>Note Rating:</strong> ${noteRating || "No comment"}</p>
+                <p><strong>Payment Method:</strong> ${payment}</p>
+                <p><strong>Status:</strong> ${orderStatus}</p>
                 <p><strong>Date:</strong> ${datetime}</p>
-                ${type === "Approved" && rating ? `<p><strong>Rating:</strong> ${rating || "Not rated"}</p>` : ""}
-                ${type === "Approved" && noteRating ? `<p><strong>Note Rating:</strong> ${noteRating || "No comment"}</p>` : ""}
+                <p><strong>Address ID:</strong> ${addrId}</p>
+                <p><strong>Address User ID:</strong> ${addrUserId}</p>
+                <p><strong>Address Name:</strong> ${addrName || "N/A"}</p>
+                <p><strong>Address Phone:</strong> ${addrPhone || "N/A"}</p>
+                <p><strong>Address City:</strong> ${addrCity || "N/A"}</p>
+                <p><strong>Address Street:</strong> ${addrStreet || "N/A"}</p>
+                <p><strong>Latitude:</strong> ${addrLat}</p>
+                <p><strong>Longitude:</strong> ${addrLong}</p>
             </div>
         </div>
     `;
@@ -226,26 +244,40 @@ function showOrderDetails(type, id, userId, address, orderType, price, deliveryP
 
 function exportToCSV() {
     const csvRows = [];
-    const headers = ['Type', 'Order ID', 'User ID', 'Address', 'Type', 'Price', 'Delivery Price', 'Total Price', 'Coupon', 'Payment Method', 'Date', 'Rating', 'Note Rating'];
+    const headers = ['Type', 'Order ID', 'User ID', 'User Name', 'Address ID', 'Type', 'Delivery Price', 'Price', 'Total Price', 'Coupon', 'Rating', 'Note Rating', 'Payment Method', 'Status', 'Date', 'Address ID', 'Address User ID', 'Address Name', 'Address Phone', 'Address City', 'Address Street', 'Latitude', 'Longitude'];
     csvRows.push(headers.join(','));
 
     // Approved Orders
     originalArchiveData.forEach(order => {
         const address = order.address_name ? `${order.address_name}, ${order.address_street}, ${order.address_city}` : "No address";
+        const orderTypeText = order.orders_type == 0 ? "Delivery" : "Takeaway";
+        const couponStatus = order.orders_coupon == 1 ? "Yes" : "No";
+        const payment = order.orders_paymentmethod == 0 ? "Cash" : "Other";
+        const orderStatus = order.orders_status == 0 ? "Pending" : (order.orders_status == 1 ? "Approved" : "Rejected");
         const values = [
             'Approved',
             order.orders_id,
             order.orders_usersid,
-            `"${address}"`,
-            order.orders_type == 0 ? "Delivery" : "Takeaway",
-            order.orders_price || 0,
+            `"${order.users_name || "N/A"}"`,
+            order.orders_address,
+            orderTypeText,
             order.orders_pricedelivery || 0,
+            order.orders_price || 0,
             order.orders_totalprice || 0,
-            order.orders_coupon == 1 ? "Yes" : "No",
-            order.orders_paymentmethod == 0 ? "Cash" : "Other",
-            order.orders_datetime,
+            couponStatus,
             order.orders_rating || "Not rated",
-            `"${order.orders_noterating || "No comment"}"`
+            `"${order.orders_noterating || "No comment"}"`,
+            payment,
+            orderStatus,
+            order.orders_datetime,
+            order.address_id || 0,
+            order.address_usersid || 0,
+            `"${order.address_name || "N/A"}"`,
+            `"${order.address_phone || "N/A"}"`,
+            `"${order.address_city || "N/A"}"`,
+            `"${order.address_street || "N/A"}"`,
+            order.address_lat || 0,
+            order.address_long || 0
         ];
         csvRows.push(values.join(','));
     });
@@ -253,20 +285,34 @@ function exportToCSV() {
     // Rejected Orders
     originalRejectData.forEach(order => {
         const address = order.address_name ? `${order.address_name}, ${order.address_street}, ${order.address_city}` : "No address";
+        const orderTypeText = order.orders_type == 0 ? "Delivery" : "Takeaway";
+        const couponStatus = order.orders_coupon == 1 ? "Yes" : "No";
+        const payment = order.orders_paymentmethod == 0 ? "Cash" : "Other";
+        const orderStatus = order.orders_status == 0 ? "Pending" : (order.orders_status == 1 ? "Approved" : "Rejected");
         const values = [
             'Rejected',
             order.orders_id,
             order.orders_usersid,
-            `"${address}"`,
-            order.orders_type == 0 ? "Delivery" : "Takeaway",
-            order.orders_price || 0,
+            `"${order.users_name || "N/A"}"`,
+            order.orders_address,
+            orderTypeText,
             order.orders_pricedelivery || 0,
+            order.orders_price || 0,
             order.orders_totalprice || 0,
-            order.orders_coupon == 1 ? "Yes" : "No",
-            order.orders_paymentmethod == 0 ? "Cash" : "Other",
+            couponStatus,
+            order.orders_rating || "Not rated",
+            `"${order.orders_noterating || "No comment"}"`,
+            payment,
+            orderStatus,
             order.orders_datetime,
-            '',
-            ''
+            order.address_id || 0,
+            order.address_usersid || 0,
+            `"${order.address_name || "N/A"}"`,
+            `"${order.address_phone || "N/A"}"`,
+            `"${order.address_city || "N/A"}"`,
+            `"${order.address_street || "N/A"}"`,
+            order.address_lat || 0,
+            order.address_long || 0
         ];
         csvRows.push(values.join(','));
     });
@@ -364,8 +410,9 @@ function searchOrders() {
         return (
             (order.orders_id && order.orders_id.toString().toLowerCase().includes(searchInput)) ||
             (order.orders_usersid && order.orders_usersid.toString().toLowerCase().includes(searchInput)) ||
+            (order.users_name && order.users_name.toLowerCase().includes(searchInput)) ||
             (address && address.toLowerCase().includes(searchInput)) ||
-            (order.orders_type != null && (order.orders_type == 0 ? "delivery" : "Takeaway").includes(searchInput)) ||
+            (order.orders_type != null && (order.orders_type == 0 ? "delivery" : "Takeaway").toLowerCase().includes(searchInput)) ||
             (order.orders_rating && order.orders_rating.toString().toLowerCase().includes(searchInput)) ||
             (order.orders_noterating && order.orders_noterating.toLowerCase().includes(searchInput))
         );
@@ -376,8 +423,9 @@ function searchOrders() {
         return (
             (order.orders_id && order.orders_id.toString().toLowerCase().includes(searchInput)) ||
             (order.orders_usersid && order.orders_usersid.toString().toLowerCase().includes(searchInput)) ||
+            (order.users_name && order.users_name.toLowerCase().includes(searchInput)) ||
             (address && address.toLowerCase().includes(searchInput)) ||
-            (order.orders_type != null && (order.orders_type == 0 ? "delivery" : "Takeaway").includes(searchInput))
+            (order.orders_type != null && (order.orders_type == 0 ? "delivery" : "Takeaway").toLowerCase().includes(searchInput))
         );
     });
 

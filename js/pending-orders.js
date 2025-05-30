@@ -173,6 +173,7 @@ function renderOrders(orders) {
                 <div class="order-card">
                     <h5>Order #${order.orders_id}</h5>
                     <div class="order-info">User ID: ${order.orders_usersid}</div>
+                    <div class="order-info">User Name: ${order.users_name || "N/A"}</div>
                     <div class="order-info">Type: ${orderType}</div>
                     <div class="order-info">Total: ${order.orders_totalprice || 0}</div>
                     <div class="order-info">Date: ${order.orders_datetime}</div>
@@ -183,7 +184,7 @@ function renderOrders(orders) {
                         <button class="btn btn-action btn-reject" onclick="rejectOrder(${order.orders_id}, ${order.orders_usersid})">
                             <i class="fas fa-times"></i> Reject
                         </button>
-                        <button class="btn-show-more" onclick="showOrderDetails(${order.orders_id}, ${order.orders_usersid}, '${order.address_name || ''}', '${order.address_street || ''}', '${order.address_city || ''}', ${order.orders_type}, ${order.orders_price || 0}, ${order.orders_pricedelivery || 0}, ${order.orders_totalprice || 0}, ${order.orders_coupon}, ${order.orders_paymentmethod}, '${order.orders_datetime}')">
+                        <button class="btn-show-more" onclick="showOrderDetails(${order.orders_id}, ${order.orders_usersid}, ${order.orders_address}, ${order.orders_type}, ${order.orders_pricedelivery || 0}, ${order.orders_price || 0}, ${order.orders_totalprice || 0}, ${order.orders_coupon || 0}, ${order.orders_rating || 0}, '${order.orders_noterating || ''}', ${order.orders_paymentmethod || 0}, ${order.orders_status || 0}, '${order.orders_datetime}', ${order.address_id || 0}, ${order.address_usersid || 0}, '${order.address_name || ''}', '${order.address_phone || ''}', '${order.address_city || ''}', '${order.address_street || ''}', ${order.address_lat || 0}, ${order.address_long || 0}, '${order.users_name || ''}')">
                             <i class="fas fa-info-circle"></i> Show More
                         </button>
                     </div>
@@ -195,11 +196,11 @@ function renderOrders(orders) {
     }
 }
 
-function showOrderDetails(id, userId, addressName, addressStreet, addressCity, type, price, deliveryPrice, totalPrice, coupon, paymentMethod, datetime) {
-    const address = addressName ? `${addressName}, ${addressStreet}, ${addressCity}` : "No address";
+function showOrderDetails(id, userId, addressId, type, deliveryPrice, price, totalPrice, coupon, rating, noteRating, paymentMethod, status, datetime, addrId, addrUserId, addrName, addrPhone, addrCity, addrStreet, addrLat, addrLong, userName) {
     const orderType = type == 0 ? "Delivery" : "Takeaway";
     const couponStatus = coupon == 1 ? "Yes" : "No";
     const payment = paymentMethod == 0 ? "Cash" : "Other";
+    const orderStatus = status == 0 ? "Pending" : "Completed";
 
     Swal.fire({
         title: `Order #${id}`,
@@ -207,14 +208,26 @@ function showOrderDetails(id, userId, addressName, addressStreet, addressCity, t
             <div style="text-align: left; font-size: 0.9rem; line-height: 1.5;">
                 <p><strong>Order ID:</strong> ${id}</p>
                 <p><strong>User ID:</strong> ${userId}</p>
-                <p><strong>Address:</strong> ${address}</p>
+                <p><strong>Address ID:</strong> ${addressId}</p>
                 <p><strong>Type:</strong> ${orderType}</p>
-                <p><strong>Price:</strong> ${price}</p>
                 <p><strong>Delivery Price:</strong> ${deliveryPrice}</p>
+                <p><strong>Price:</strong> ${price}</p>
                 <p><strong>Total Price:</strong> ${totalPrice}</p>
                 <p><strong>Coupon:</strong> ${couponStatus}</p>
+                <p><strong>Rating:</strong> ${rating}</p>
+                <p><strong>Rating Note:</strong> ${noteRating || "N/A"}</p>
                 <p><strong>Payment Method:</strong> ${payment}</p>
-                <p><strong>Date:</strong> ${datetime}</p>
+                <p><strong>Status:</strong> ${orderStatus}</p>
+                <p><strong>Date/Time:</strong> ${datetime}</p>
+                <p><strong>Address ID:</strong> ${addrId}</p>
+                <p><strong>Address User ID:</strong> ${addrUserId}</p>
+                <p><strong>Address Name:</strong> ${addrName || "N/A"}</p>
+                <p><strong>Address Phone:</strong> ${addrPhone || "N/A"}</p>
+                <p><strong>Address City:</strong> ${addrCity || "N/A"}</p>
+                <p><strong>Address Street:</strong> ${addrStreet || "N/A"}</p>
+                <p><strong>Latitude:</strong> ${addrLat}</p>
+                <p><strong>Longitude:</strong> ${addrLong}</p>
+                <p><strong>User Name:</strong> ${userName || "N/A"}</p>
             </div>
         `,
         confirmButtonText: 'Close',
@@ -245,7 +258,8 @@ function searchOrders() {
             (order.orders_id && order.orders_id.toString().includes(searchInput)) ||
             (order.orders_usersid && order.orders_usersid.toString().includes(searchInput)) ||
             (address && address.toLowerCase().includes(searchInput)) ||
-            (order.orders_type != null && (order.orders_type == 0 ? "delivery" : "takeaway").includes(searchInput))
+            (order.orders_type != null && (order.orders_type == 0 ? "delivery" : "takeaway").includes(searchInput)) ||
+            (order.users_name && order.users_name.toLowerCase().includes(searchInput))
         );
     });
 
