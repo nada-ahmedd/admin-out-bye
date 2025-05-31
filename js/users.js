@@ -182,12 +182,9 @@ function toggleDetails(userId) {
             <div class="user-info"><span>Email:</span><span>${user?.users_email || "N/A"}</span></div>
             <div class="user-info"><span>Phone:</span><span>${user?.users_phone || "N/A"}</span></div>
             <div class="user-info"><span>Created:</span><span>${user?.users_create || "N/A"}</span></div>
-            <div class="user-info"><span>Status:</span><span>${approveStatus}</span></div>
             <div class="user-info"><span>Address:</span><span>${addressInfo}</span></div>
-            <div class="user-info"><span>Verify Code:</span><span>${user?.users_verfiycode || "N/A"}</span></div>
             <div class="user-info"><span>Address Name:</span><span>${user?.address_name || "N/A"}</span></div>
             <div class="user-info"><span>Address Phone:</span><span>${user?.address_phone || "N/A"}</span></div>
-            <div class="user-info"><span>Coordinates:</span><span>(${user?.address_lat || "N/A"}, ${user?.address_long || "N/A"})</span></div>
         `;
     }
 

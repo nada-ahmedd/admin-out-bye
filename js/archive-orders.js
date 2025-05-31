@@ -228,8 +228,6 @@ function showOrderDetails(type, id, userId, addressId, orderType, deliveryPrice,
                 <p><strong>Address Phone:</strong> ${addrPhone || "N/A"}</p>
                 <p><strong>Address City:</strong> ${addrCity || "N/A"}</p>
                 <p><strong>Address Street:</strong> ${addrStreet || "N/A"}</p>
-                <p><strong>Latitude:</strong> ${addrLat}</p>
-                <p><strong>Longitude:</strong> ${addrLong}</p>
             </div>
         </div>
     `;
